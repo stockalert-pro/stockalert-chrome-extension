@@ -1,0 +1,2707 @@
+openapi: 3.0.3
+info:
+  title: StockAlert.pro API (v1)
+  version: 1.0.0
+  contact:
+    name: StockAlert.pro Support
+    email: support@stockalert.pro
+    url: https://stockalert.pro/support
+  license:
+    name: Proprietary
+    url: https://stockalert.pro/terms
+  termsOfService: https://stockalert.pro/terms
+  description: |
+    Unified v1 API for alerts, watchlists, stocks, webhooks and API keys.
+
+    Authentication: API Key (`X-API-Key`), Bearer JWT (`Authorization: Bearer <token>`) or Session (first‑party web).
+
+externalDocs:
+  description: Complete API documentation and guides
+  url: https://docs.stockalert.pro/api
+servers:
+  - url: https://stockalert.pro
+    description: Production
+tags:
+  - name: Alerts
+    description: Manage price and technical alerts
+  - name: Watchlist
+    description: Manage your watchlist items and AI analysis
+  - name: Webhooks
+    description: Manage outgoing webhooks for alert events
+  - name: API Keys
+    description: Manage API keys for programmatic access
+  - name: Stocks
+    description: Stocks catalog and details
+  - name: Market
+    description: Internal market insights endpoints
+  - name: Feedback
+    description: Collect and manage user feedback (internal)
+  - name: User
+    description: Account, session and preferences (internal)
+
+paths:
+  /api/v1/stocks:
+    get:
+      tags: [Stocks]
+      x-internal: true
+      operationId: stocksList
+      summary: List stocks (v1)
+      description: Paginated list of stocks with optional search and filters.
+      # Internal: guest allowed for first‑party only; API key not supported
+      parameters:
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/LimitAlertsList'
+        - name: active
+          in: query
+          schema: { type: boolean }
+        - name: fields
+          in: query
+          schema:
+            type: array
+            items: { type: string }
+          style: form
+          explode: false
+          description: "CSV projection: `details` (include stock_details), `fundamentals` (include stock_fundamentals)"
+        - name: includeInactive
+          in: query
+          schema: { type: boolean }
+          description: Include inactive stocks if `true` (default returns only active)
+      responses:
+        '200':
+          description: Successful response
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ApiSuccessStocksListEnvelope'
+                  - $ref: '#/components/schemas/ApiSuccessStocksSearchEnvelope'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+    post:
+      tags: [Stocks]
+      x-internal: true
+      operationId: stocksUpsert
+      summary: Upsert stock (v1)
+      description: |
+        Ensures a stock exists (create if missing). May enqueue background jobs.
+      x-required-scopes: [stocks:write]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [symbol]
+              properties:
+                symbol: { type: string }
+                name: { type: string }
+                type: { type: string }
+                exchange: { type: string }
+                activate: { type: boolean }
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '200': { $ref: '#/components/responses/Ok' }
+        '202':
+          description: Accepted; background jobs enqueued
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      symbol: { type: string }
+                      created: { type: boolean }
+                      jobsQueued: { type: integer }
+                  meta:
+                    type: object
+                    properties:
+                      rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/Validation' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/v1/stocks/{symbol}:
+    get:
+      tags: [Stocks]
+      x-internal: true
+      operationId: stocksGet
+      summary: Get stock detail (v1)
+      description: Returns a single stock with optional fundamentals.
+      # Internal: guest allowed for first‑party only; API key not supported
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema: { type: string }
+        - name: fields
+          in: query
+          schema:
+            type: array
+            items: { type: string }
+          style: form
+          explode: false
+          description: "CSV projection: `fundamentals` (include stock_fundamentals)"
+      responses:
+        '200':
+          description: Successful
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ApiSuccessStockEnvelope'
+                  - $ref: '#/components/schemas/ApiSuccessStockWithFundamentalsEnvelope'
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Validation' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+    patch:
+      tags: [Stocks]
+      x-internal: true
+      operationId: stocksPatch
+      summary: Update stock (v1)
+      description: Update mutable fields like active state.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                active: { type: boolean }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Validation' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/v1/stocks/{symbol}/earnings:
+    get:
+      tags: [Stocks]
+      x-internal: true
+      operationId: stocksEarnings
+      summary: Get earnings timeline (v1)
+      description: Returns upcoming and recent earnings information.
+      # Internal: guest allowed for first‑party only; API key not supported
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Validation' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/v1/stocks/{symbol}/analysis:
+    get:
+      tags: [Stocks]
+      x-internal: true
+      operationId: stocksAnalysis
+      summary: AI stock analysis (internal)
+      description: Server-sent events stream with AI-generated analysis and recommendations.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema: { type: string }
+        - name: investmentHorizon
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1 }
+          description: Optional horizon in days to tailor the analysis
+      responses:
+        '200':
+          description: Streaming analysis events
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /api/v1/quotes:
+    get:
+      tags: [Stocks]
+      x-internal: true
+      operationId: quotesBulk
+      summary: Get bulk quotes (v1)
+      description: Lightweight prices for multiple symbols.
+      # Internal: guest allowed for first‑party only; API key not supported
+      parameters:
+        - name: symbols
+          in: query
+          required: true
+          schema:
+            type: array
+            items: { type: string }
+          style: form
+          explode: false
+          description: CSV list of symbols (e.g., AAPL,MSFT)
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/Validation' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/v1/watchlist:
+    get:
+      tags: [Watchlist]
+      operationId: watchlistList
+      summary: List watchlist items (v1)
+      description: Returns current user's watchlist items.
+      x-required-scopes: [watchlist:read]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessWatchlistListEnvelope'
+              examples:
+                example:
+                  value:
+                    success: true
+                    data:
+                      - id: "00000000-0000-4000-8000-000000000001"
+                        stock_symbol: "AAPL"
+                        intention: "buy"
+                        target_price: 200
+                        initial_price: 189.2
+                        auto_alerts_enabled: true
+                        stocks:
+                          symbol: "AAPL"
+                          name: "Apple Inc."
+                          last_price: 189.2
+                    meta:
+                      rateLimit: { limit: 60, remaining: 59, reset: 1736180400000 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+    post:
+      tags: [Watchlist]
+      operationId: watchlistCreate
+      summary: Add item to watchlist (v1)
+      description: Creates a new watchlist item.
+      x-required-scopes: [watchlist:write]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateWatchlistItemRequest' }
+      responses:
+        '201':
+          description: Created
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessWatchlistItemEnvelope'
+              examples:
+                example:
+                  value:
+                    success: true
+                    data:
+                      id: "00000000-0000-4000-8000-000000000002"
+                      stock_symbol: "MSFT"
+                      intention: "sell"
+                      initial_price: 300
+                      auto_alerts_enabled: false
+                      stocks:
+                        symbol: "MSFT"
+                        name: "Microsoft Corp."
+                        last_price: 300.1
+                    meta:
+                      rateLimit: { limit: 60, remaining: 59, reset: 1736180400000 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/BadRequest' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/v1/watchlist/{id}:
+    patch:
+      tags: [Watchlist]
+      operationId: watchlistUpdate
+      summary: Update watchlist item (v1)
+      description: Update fields of an existing watchlist item.
+      x-required-scopes: [watchlist:write]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateWatchlistItemRequest' }
+      responses:
+        '200':
+          description: Updated
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessWatchlistItemEnvelope'
+              examples:
+                example:
+                  value:
+                    success: true
+                    data:
+                      id: "00000000-0000-4000-8000-000000000002"
+                      stock_symbol: "MSFT"
+                      intention: "sell"
+                      target_price: 305
+                      initial_price: 300
+                      auto_alerts_enabled: false
+                      stocks:
+                        symbol: "MSFT"
+                        name: "Microsoft Corp."
+                        last_price: 301.5
+                    meta:
+                      rateLimit: { limit: 60, remaining: 59, reset: 1736180400000 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+    delete:
+      tags: [Watchlist]
+      operationId: watchlistDelete
+      summary: Delete watchlist item (v1)
+      description: Delete an item from the watchlist.
+      x-required-scopes: [watchlist:write]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Deleted
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessWatchlistDeletedEnvelope'
+              examples:
+                example:
+                  value:
+                    success: true
+                    data:
+                      deleted: true
+                    meta:
+                      rateLimit: { limit: 60, remaining: 59, reset: 1736180400000 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/v1/watchlist/order:
+    put:
+      tags: [Watchlist]
+      operationId: watchlistSwapIntention
+      summary: Swap intention (buy/sell) and reanalyze (v1)
+      description: Resets initial price and queues analysis for intention change.
+      x-required-scopes: [watchlist:write]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SwapIntentionRequest' }
+      responses:
+        '200':
+          description: Updated
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessWatchlistOrderEnvelope'
+              examples:
+                example:
+                  value:
+                    success: true
+                    data:
+                      item:
+                        id: "00000000-0000-4000-8000-000000000003"
+                        stock_symbol: "AAPL"
+                        intention: "buy"
+                        initial_price: 189.2
+                        auto_alerts_enabled: true
+                        stocks:
+                          symbol: "AAPL"
+                          name: "Apple Inc."
+                          last_price: 190.0
+                      deletedAlerts: 2
+                    meta:
+                      rateLimit: { limit: 60, remaining: 59, reset: 1736180400000 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/v1/api-keys:
+    get:
+      tags: [API Keys]
+      operationId: apiKeysList
+      summary: List API keys (v1)
+      description: Returns API keys for the authenticated user (prefix only).
+      x-required-scopes: [api-keys:read]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessApiKeysListEnvelope'
+              examples:
+                example:
+                  value:
+                    success: true
+                    data:
+                      - id: "a1111111-2222-3333-4444-555555555555"
+                        name: "CI Token"
+                        key_prefix: "sk_12ab3c4"
+                        rate_limit_tier: "basic"
+                        is_active: true
+                        created_at: "2025-01-01T12:00:00.000Z"
+                    meta:
+                      rateLimit: { limit: 10000, remaining: 9999, reset: 1736180400000 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+    post:
+      tags: [API Keys]
+      operationId: apiKeysCreate
+      summary: Create API key (v1)
+      description: Creates a new API key. Plaintext returned once.
+      x-required-scopes: [api-keys:write]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+      responses:
+        '201':
+          description: Created
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessApiKeyEnvelope'
+              examples:
+                example:
+                  value:
+                    success: true
+                    data:
+                      id: "b2222222-3333-4444-5555-666666666666"
+                      name: "My Integration"
+                      key_prefix: "sk_ab12cd3"
+                      created_at: "2025-01-01T12:00:00.000Z"
+                      rate_limit_tier: "premium"
+                      apiKey: "sk_abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+                    meta:
+                      rateLimit: { limit: 10000, remaining: 9999, reset: 1736180400000 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/v1/api-keys/{id}:
+    delete:
+      tags: [API Keys]
+      operationId: apiKeysDelete
+      summary: Delete API key (v1)
+      description: Deletes the specified API key.
+      x-required-scopes: [api-keys:write]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Deleted
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      id: { type: string }
+                  meta:
+                    type: object
+                    properties:
+                      rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+              examples:
+                example:
+                  value:
+                    success: true
+                    data:
+                      id: "00000000-0000-4000-8000-000000000004"
+                    meta:
+                      rateLimit: { limit: 10000, remaining: 9999, reset: 1736180400000 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/v1/alerts:
+    get:
+      tags: [Alerts]
+      operationId: alertsList
+      summary: List alerts (v1)
+      description: Get a paginated list of alerts.
+      x-required-scopes: [alerts:read]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/LimitAlertsList'
+        - $ref: '#/components/parameters/Status'
+        - $ref: '#/components/parameters/ConditionFilter'
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/SortField'
+        - $ref: '#/components/parameters/SortDirection'
+        - $ref: '#/components/parameters/Minimal'
+        - $ref: '#/components/parameters/Extended'
+      responses:
+        '200':
+          description: Successful response
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessAlertsListEnvelope'
+              examples:
+                example:
+                  value:
+                    success: true
+                    data:
+                      - id: "a5d7e3f0-1234-4d8a-9c2b-111111111111"
+                        symbol: "AAPL"
+                        condition: "price_above"
+                        threshold: 200
+                        notification: "email"
+                        status: "active"
+                        created_at: "2025-01-01T12:00:00.000Z"
+                        initial_price: 189.2
+                        parameters: null
+                    meta:
+                      pagination: { page: 1, limit: 50, total: 1, totalPages: 1 }
+                      rateLimit: { limit: 100, remaining: 99, reset: 1736180400000 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+    post:
+      tags: [Alerts]
+      operationId: alertsCreate
+      summary: Create alert (v1)
+      description: |
+        Create a new alert.
+        - Guest (no auth): allowed only when an `email` is supplied. The alert is created as `inactive` and must be verified via `POST /api/v1/alerts/verify`.
+      x-required-scopes: [alerts:write]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateAlertRequest' }
+      responses:
+        '201':
+          description: Created
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessAlertEnvelope'
+              examples:
+                example:
+                  value:
+                    success: true
+                    data:
+                      id: "2f8d0f7b-2222-4c3a-b1c3-222222222222"
+                      symbol: "AAPL"
+                      condition: "price_above"
+                      threshold: 200
+                      notification: "email"
+                      status: "active"
+                      created_at: "2025-01-01T12:00:00.000Z"
+                      initial_price: 189.2
+                      parameters: null
+                    meta:
+                      rateLimit: { limit: 100, remaining: 99, reset: 1736180400000 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Validation' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/v1/alerts/{id}:
+    get:
+      tags: [Alerts]
+      operationId: alertsGet
+      summary: Get alert (v1)
+      description: Get alert by id.
+      x-required-scopes: [alerts:read]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Successful
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessAlertEnvelope'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Validation' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+    put:
+      tags: [Alerts]
+      operationId: alertsUpdate
+      summary: Update alert (v1)
+      description: Full update of an alert.
+      x-required-scopes: [alerts:write]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateAlertRequest' }
+      responses:
+        '200':
+          description: Updated
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessAlertEnvelope'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Validation' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+    delete:
+      tags: [Alerts]
+      operationId: alertsDelete
+      summary: Delete alert (v1)
+      description: Delete an alert by id.
+      x-required-scopes: [alerts:write]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Deleted
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessAlertDeletedEnvelope'
+              examples:
+                example:
+                  value:
+                    success: true
+                    data:
+                      alertId: "2f8d0f7b-2222-4c3a-b1c3-222222222222"
+                      status: deleted
+                    meta:
+                      rateLimit: { limit: 100, remaining: 99, reset: 1736180400000 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Validation' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/v1/alerts/{id}/pause:
+    post:
+      tags: [Alerts]
+      operationId: alertsPause
+      summary: Pause alert (v1)
+      description: Pause an active alert.
+      x-required-scopes: [alerts:write]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Paused
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessAlertPausedEnvelope'
+              examples:
+                example:
+                  value:
+                    success: true
+                    data:
+                      alertId: "2f8d0f7b-2222-4c3a-b1c3-222222222222"
+                      status: paused
+                    meta:
+                      rateLimit: { limit: 100, remaining: 99, reset: 1736180400000 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Validation' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/v1/alerts/{id}/activate:
+    post:
+      tags: [Alerts]
+      operationId: alertsActivate
+      summary: Activate alert (v1)
+      description: Reactivate a paused or inactive alert.
+      x-required-scopes: [alerts:write]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Activated
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessAlertActivatedEnvelope'
+              examples:
+                example:
+                  value:
+                    success: true
+                    data:
+                      alertId: "2f8d0f7b-2222-4c3a-b1c3-222222222222"
+                      status: active
+                      initialPrice: 189.2
+                    meta:
+                      rateLimit: { limit: 100, remaining: 99, reset: 1736180400000 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Validation' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /api/v1/alerts/{id}/history:
+    get:
+      tags: [Alerts]
+      operationId: alertsHistory
+      summary: Alert history (v1)
+      description: Get history of an alert.
+      x-required-scopes: [alerts:read]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/LimitHistory'
+      responses:
+        '200':
+          description: Successful response
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessAlertHistoryEnvelope'
+              examples:
+                example:
+                  value:
+                    success: true
+                    data:
+                      - alert_id: "2f8d0f7b-2222-4c3a-b1c3-222222222222"
+                        symbol: "AAPL"
+                        action_type: triggered
+                        action_timestamp: "2025-01-01T12:34:56.000Z"
+                        previous_status: active
+                        new_status: triggered
+                        trigger_price: 205.5
+                    meta:
+                      pagination: { page: 1, limit: 50, total: 1, totalPages: 1 }
+                      rateLimit: { limit: 100, remaining: 99, reset: 1736180400000 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/v1/alerts/stats:
+    get:
+      tags: [Alerts]
+      operationId: alertsStats
+      summary: Alerts statistics (v1)
+      description: Returns total alert counts per status.
+      x-required-scopes: [alerts:stats]
+      security:
+        - BearerAuth: []
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/v1/alerts/verify:
+    post:
+      tags: [Alerts]
+      x-internal: true
+      operationId: alertsVerify
+      summary: Verify alert (v1)
+      description: Verify alert via token (guest allowed)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string }
+      responses:
+        '200':
+          description: Verified
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessAlertVerifyEnvelope'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/v1/alerts/history:
+    post:
+      tags: [Alerts]
+      x-internal: true
+      operationId: alertsHistoryLog
+      summary: Log alert history (v1)
+      description: Append a history entry (internal).
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AlertHistory' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  /api/v1/webhooks:
+    get:
+      tags: [Webhooks]
+      operationId: webhooksList
+      summary: List webhooks (v1)
+      description: Returns configured webhooks.
+      x-required-scopes: [webhooks:read]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessWebhooksListEnvelope'
+              examples:
+                example:
+                  value:
+                    success: true
+                    data:
+                      - id: "00000000-0000-4000-8000-000000000005"
+                        user_id: "00000000-0000-4000-8000-0000000000aa"
+                        url: "https://example.com/webhook"
+                        events: ["alert.triggered"]
+                        is_active: true
+                        created_at: "2025-01-01T12:00:00.000Z"
+                    meta:
+                      rateLimit: { limit: 1000, remaining: 999, reset: 1736180400000 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+    post:
+      summary: Create webhook (v1)
+      tags: [Webhooks]
+      operationId: webhooksCreate
+      description: Create a new webhook.
+      x-required-scopes: [webhooks:write]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url, events]
+              properties:
+                url: { type: string, format: uri }
+                events: { type: array, items: { type: string } }
+                secret: { type: string }
+      responses:
+        '201':
+          description: Created
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessWebhookCreatedEnvelope'
+              examples:
+                example:
+                  value:
+                    success: true
+                    data:
+                      id: "00000000-0000-4000-8000-000000000006"
+                      url: "https://example.com/webhook"
+                      events: ["alert.triggered"]
+                      secret: "redacted"
+                      is_active: true
+                      created_at: "2025-01-01T12:00:00.000Z"
+                    meta:
+                      rateLimit: { limit: 1000, remaining: 999, reset: 1736180400000 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/v1/webhooks/{id}:
+    get:
+      summary: Get webhook (v1)
+      tags: [Webhooks]
+      operationId: webhooksGet
+      description: Get webhook by id.
+      x-required-scopes: [webhooks:read]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Successful response
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessWebhookEnvelope'
+              examples:
+                example:
+                  value:
+                    success: true
+                    data:
+                      id: "00000000-0000-4000-8000-000000000005"
+                      user_id: "00000000-0000-4000-8000-0000000000aa"
+                      url: "https://example.com/webhook"
+                      events: ["alert.triggered"]
+                      is_active: true
+                      created_at: "2025-01-01T12:00:00.000Z"
+                    meta:
+                      rateLimit: { limit: 1000, remaining: 999, reset: 1736180400000 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+    delete:
+      summary: Delete webhook (v1)
+      tags: [Webhooks]
+      operationId: webhooksDelete
+      description: Delete a webhook by id.
+      x-required-scopes: [webhooks:write]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Deleted
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessWebhookDeletedEnvelope'
+              examples:
+                example:
+                  value:
+                    success: true
+                    data:
+                      id: "00000000-0000-4000-8000-000000000005"
+                    meta:
+                      rateLimit: { limit: 1000, remaining: 999, reset: 1736180400000 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/v1/webhooks/test:
+    post:
+      summary: Send test webhook (v1)
+      tags: [Webhooks]
+      operationId: webhooksTest
+      description: Sends a test event to your webhook URL.
+      x-required-scopes: [webhooks:write]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url, secret]
+              properties:
+                url: { type: string, format: uri }
+                secret: { type: string }
+      responses:
+        '200':
+          description: Successful response
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessWebhookTestEnvelope'
+              examples:
+                example:
+                  value:
+                    success: true
+                    data:
+                      status: 200
+                      statusText: OK
+                      response: "ok"
+                    meta:
+                      rateLimit: { limit: 5, remaining: 4, reset: 1736180400000 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Forbidden (missing scope)
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  # Internal market endpoints (excluded from public via x-internal)
+  /api/v1/market/performance:
+    get:
+      tags: [Market]
+      x-internal: true
+      operationId: marketPerformance
+      summary: Market performance for symbols (v1)
+      description: |
+        Returns performance percentage for the requested symbols and time period using adjusted close prices.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: symbols
+          in: query
+          required: true
+          schema:
+            type: array
+            items: { type: string }
+          style: form
+          explode: false
+          description: Comma-separated symbols (e.g., AAPL,SPY,ACWI)
+        - name: period
+          in: query
+          schema: { type: string, enum: ["1M","3M","6M","1Y","3Y","5Y","10Y"] }
+          description: Optional period for which to return performance
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/Validation' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /api/v1/market/undervalued:
+    get:
+      tags: [Market]
+      x-internal: true
+      operationId: marketUndervalued
+      summary: Top undervalued stocks by sector-relative P/E (v1)
+      description: Returns undervalued stocks based on P/E vs. sector average.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /api/v1/market/indices:
+    get:
+      tags: [Market]
+      x-internal: true
+      operationId: marketIndices
+      summary: Major indices snapshot (internal)
+      description: Returns a snapshot of major market indices (SPY, DIA, QQQ, IWM, VIXY) with price and change metrics.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /api/v1/market/top-movers:
+    get:
+      tags: [Market]
+      x-internal: true
+      operationId: marketTopMovers
+      summary: Top gainers/losers and most active (internal)
+      description: Returns lists of top gainers, top losers, and most active stocks for the current session.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /api/v1/market/news:
+    get:
+      tags: [Market]
+      x-internal: true
+      operationId: marketNews
+      summary: Market news (internal)
+      description: Returns normalized market news items from upstream provider.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: topic
+          in: query
+          required: false
+          schema: { type: string }
+          description: Topic (hyphens allowed; mapped to Alpha Vantage topic codes)
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 50 }
+          description: Max number of items (default 10)
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /api/v1/market/billionaires:
+    get:
+      tags: [Market]
+      x-internal: true
+      operationId: marketBillionaires
+      summary: Top 100 billionaires snapshot (internal)
+      description: Returns billionaire data with lastFetched and source. Uses Supabase cache with weekday/weekend semantics.
+      security:
+        - BearerAuth: []
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+        '500': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /api/v1/market/insights:
+    get:
+      tags: [Market]
+      x-internal: true
+      operationId: getInsights
+      summary: AI Market Insights - Daily Analysis
+      description: |
+        Daily AI stock analysis with scoring from -100 (Avoid) to +100 (Strong Buy).
+        Combines technical indicators, fundamentals, and sentiment analysis.
+
+        Cached for 12 hours. Public endpoint (no auth required).
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+          description: Maximum number of picks to return
+      responses:
+        '200':
+          description: Successful response with market insights
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+            Cache-Control:
+              description: Cache control header
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      picks:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            symbol: { type: string, example: "AAPL" }
+                            label:
+                              type: string
+                              enum: ["Strong buy", "Good opportunity", "Neutral", "Wait", "Avoid"]
+                            score:
+                              type: integer
+                              minimum: -100
+                              maximum: 100
+                              example: 42
+                            confidence:
+                              type: number
+                              minimum: 0
+                              maximum: 1
+                              example: 0.85
+                            updated_at: { type: string, format: date-time }
+                            summary: { type: string }
+                            market_context: { type: string }
+                            news_summary: { type: string }
+                            indicator_reasoning: { type: string }
+                            strategy_hint: { type: string }
+                            highlights:
+                              type: object
+                              properties:
+                                company_name: { type: string }
+                                logo_url: { type: string }
+                                exchange: { type: string }
+                                market_cap: { type: string }
+                                pe_fwd: { oneOf: [{ type: number }, { type: string, enum: ["n/a"] }] }
+                                roe_pct: { type: string }
+                                profit_margin_pct: { type: string }
+                                revenue_yoy_pct: { oneOf: [{ type: string }, { type: string, enum: ["n/a"] }] }
+                                eps_yoy_pct: { oneOf: [{ type: string }, { type: string, enum: ["n/a"] }] }
+                                ev_to_ebitda: { oneOf: [{ type: number }, { type: string, enum: ["n/a"] }] }
+                                pb: { oneOf: [{ type: number }, { type: string, enum: ["n/a"] }] }
+                                ps: { oneOf: [{ type: number }, { type: string, enum: ["n/a"] }] }
+                                beta: { oneOf: [{ type: number }, { type: string, enum: ["n/a"] }] }
+                                rsi14: { oneOf: [{ type: number }, { type: string, enum: ["n/a"] }] }
+                                pos_52w: { type: string }
+                                vol_ratio: { oneOf: [{ type: number }, { type: string, enum: ["n/a"] }] }
+                      updated_at: { type: string, format: date-time }
+                      total_count: { type: integer }
+                      source: { type: string, enum: ["cache", "fresh", "stale"] }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /api/v1/feedback:
+    get:
+      tags: [Feedback]
+      x-internal: true
+      operationId: listFeedback
+      summary: List feedback (internal)
+      description: Returns feedback items filtered by optional type and status.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          required: false
+          schema: { type: string }
+        - name: status
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/ServiceUnavailable' }
+    post:
+      tags: [Feedback]
+      x-internal: true
+      operationId: createFeedback
+      summary: Create feedback (internal)
+      description: Creates a new feedback entry. Title and content are required.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, content]
+              properties:
+                title: { type: string }
+                content: { type: string }
+                type: { type: string, default: feedback }
+                user_email: { type: string }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /api/v1/feedback/like:
+    post:
+      tags: [Feedback]
+      x-internal: true
+      operationId: toggleFeedbackLike
+      summary: Toggle like/unlike for feedback (internal)
+      description: Toggles the like state for a specific feedback item for the current user.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [feedback_id]
+              properties:
+                feedback_id: { type: string, format: uuid }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /api/v1/market/exchange-rate:
+    get:
+      tags: [Market]
+      x-internal: true
+      operationId: marketExchangeRate
+      summary: USD→EUR exchange rate (internal)
+      description: Returns current USD→EUR exchange rate used by the app.
+      security:
+        - BearerAuth: []
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /api/v1/market/dividend-dates:
+    get:
+      tags: [Market]
+      x-internal: true
+      operationId: marketDividendDates
+      summary: Dividend ex/payment dates by month (internal)
+      description: Returns grouped dividend ex-dates and payment dates for a given month.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: month
+          required: false
+          schema:
+            type: string
+            pattern: '^\\d{4}-\\d{2}$'
+          description: Month in YYYY-MM format. Defaults to current month.
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/Validation' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  # User (internal)
+  /api/v1/user/session:
+    get:
+      tags: [User]
+      x-internal: true
+      operationId: userSession
+      summary: Get current session (internal)
+      description: Returns a snapshot of the current authenticated user including metadata and identities.
+      security:
+        - BearerAuth: []
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/v1/user/logout:
+    post:
+      tags: [User]
+      x-internal: true
+      operationId: userLogout
+      summary: Logout (internal)
+      description: Signs out the current user session.
+      security:
+        - BearerAuth: []
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/v1/user/preferences/currency:
+    put:
+      tags: [User]
+      x-internal: true
+      operationId: updateUserCurrency
+      summary: Update preferred currency (internal)
+      description: Sets the preferred currency for pricing and display.
+      x-required-scopes: [user:write]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [preferred_currency]
+              properties:
+                preferred_currency:
+                  type: string
+                  enum: [USD, EUR]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/v1/user/preferences/newsletter:
+    get:
+      tags: [User]
+      x-internal: true
+      operationId: userPreferencesNewsletterGet
+      summary: Get newsletter preferences (internal)
+      description: Returns current newsletter preferences for the authenticated user.
+      x-required-scopes: [user:read]
+      security:
+        - BearerAuth: []
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+    put:
+      tags: [User]
+      x-internal: true
+      operationId: userPreferencesNewsletterPut
+      summary: Update newsletter preferences (internal)
+      description: Updates newsletter preferences for the authenticated user.
+      x-required-scopes: [user:write]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newsletter_product_updates: { type: boolean }
+                newsletter_weekly_summary: { type: boolean }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/v1/user/preferences/theme:
+    get:
+      tags: [User]
+      x-internal: true
+      operationId: getUserThemePreference
+      summary: Get theme preference (internal)
+      description: Returns the current dashboard theme preference.
+      x-required-scopes: [user:read]
+      security:
+        - BearerAuth: []
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+    put:
+      tags: [User]
+      x-internal: true
+      operationId: updateUserThemePreference
+      summary: Update theme preference (internal)
+      description: Updates the dashboard theme preference.
+      x-required-scopes: [user:write]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [theme_preference]
+              properties:
+                theme_preference:
+                  type: string
+                  enum: [light, dark, system]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/v1/user/notifications/browser/subscribe:
+    post:
+      tags: [User]
+      x-internal: true
+      operationId: userBrowserNotificationsSubscribe
+      summary: Subscribe to browser push notifications (internal)
+      description: Stores the Web Push subscription to enable browser notifications.
+      x-required-scopes: [user:write]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subscription]
+              properties:
+                subscription:
+                  type: object
+                  description: Web Push subscription object
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/v1/user/notifications/browser/unsubscribe:
+    post:
+      tags: [User]
+      x-internal: true
+      operationId: userBrowserNotificationsUnsubscribe
+      summary: Unsubscribe from browser push notifications (internal)
+      description: Disables browser push notifications and clears the stored subscription.
+      x-required-scopes: [user:write]
+      security:
+        - BearerAuth: []
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/v1/user/subscription:
+    get:
+      tags: [User]
+      operationId: userSubscription
+      summary: Get subscription, quotas and usage
+      description: Returns the user’s subscription status, quotas, usage, and counts for alerts/watchlist.
+      x-required-scopes: [user:read]
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Successful response
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccessUserSubscriptionEnvelope'
+              examples:
+                premium:
+                  summary: Premium user example
+                  value:
+                    success: true
+                    data:
+                      id: "sub_123"
+                      account_type: premium
+                      status: active
+                      is_early_bird: false
+                      is_early_bird_eligible: true
+                      is_premium: true
+                      cancel_at_period_end: false
+                      quotas: { sms: 50, whatsapp: 50 }
+                      usage: { count: 12 }
+                      current_period: { start: "2025-01-01T00:00:00.000Z", end: "2025-02-01T00:00:00.000Z" }
+                      alert_count: 7
+                      alert_quota: null
+                      watchlist_items_count: 9
+                      watchlist_quota: 100
+                    meta:
+                      rateLimit: { limit: 30, remaining: 29, reset: 1736180400000 }
+                basic:
+                  summary: Basic user example
+                  value:
+                    success: true
+                    data:
+                      account_type: basic
+                      status: active
+                      is_early_bird: false
+                      is_early_bird_eligible: true
+                      is_premium: false
+                      cancel_at_period_end: null
+                      quotas: { sms: 0, whatsapp: 0 }
+                      usage: { count: 0 }
+                      current_period: { start: null, end: null }
+                      alert_count: 2
+                      alert_quota: 50
+                      watchlist_items_count: 2
+                      watchlist_quota: 10
+                    meta:
+                      rateLimit: { limit: 30, remaining: 29, reset: 1736180400000 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/v1/user/account/email:
+    put:
+      tags: [User]
+      x-internal: true
+      operationId: userAccountUpdateEmail
+      summary: Update email address (internal)
+      description: Updates the email address for the authenticated user.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/v1/user/account/phone:
+    post:
+      tags: [User]
+      x-internal: true
+      operationId: userAccountRequestPhoneVerification
+      summary: Request phone verification (internal)
+      description: Adds or updates the phone number and initiates verification.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone: { type: string }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/v1/user/account/phone/verify:
+    post:
+      tags: [User]
+      x-internal: true
+      operationId: userAccountVerifyPhone
+      summary: Verify phone number (internal)
+      description: Verifies the phone number using the provided OTP token.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, token]
+              properties:
+                phone: { type: string }
+                token: { type: string }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/v1/user/account/deactivate:
+    post:
+      tags: [User]
+      x-internal: true
+      operationId: userAccountDeactivate
+      summary: Deactivate account (internal)
+      description: Marks the account as deactivated and pauses active alerts.
+      x-required-scopes: [user:write]
+      security:
+        - BearerAuth: []
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/v1/user/account/reactivate:
+    post:
+      tags: [User]
+      x-internal: true
+      operationId: userAccountReactivate
+      summary: Reactivate account (internal)
+      description: Marks the account as active and reactivates paused alerts.
+      x-required-scopes: [user:write]
+      security:
+        - BearerAuth: []
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/v1/user/account/unlink:
+    post:
+      tags: [User]
+      x-internal: true
+      operationId: userAccountUnlinkIdentity
+      summary: Unlink an identity (internal)
+      description: Removes a linked identity from the account. Requires at least two identities on the account.
+      x-required-scopes: [user:write]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identity_id]
+              properties:
+                identity_id: { type: string }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '501': { $ref: '#/components/responses/InternalError' }
+
+  /api/v1/user/account/password:
+    post:
+      tags: [User]
+      x-internal: true
+      operationId: userAccountUpdatePassword
+      summary: Update password (internal)
+      description: Sets or updates the user’s password.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password: { type: string, minLength: 6 }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/v1/user/account:
+    delete:
+      tags: [User]
+      x-internal: true
+      operationId: userAccountDelete
+      summary: Delete account (internal)
+      description: Permanently deletes the account and associated data. This action is irreversible.
+      x-required-scopes: [user:write]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirmation]
+              properties:
+                confirmation:
+                  type: string
+                  enum: [DELETE]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  headers:
+    X-RateLimit-Limit:
+      description: Requests allowed in the current window
+      schema: { type: integer }
+    X-RateLimit-Remaining:
+      description: Requests remaining in the current window
+      schema: { type: integer }
+    X-RateLimit-Reset:
+      description: Reset time as Unix epoch milliseconds
+      schema: { type: integer, format: int64 }
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, default: 1, minimum: 1 }
+      description: Page number (1-based)
+    LimitAlertsList:
+      name: limit
+      in: query
+      schema: { type: integer, default: 50, maximum: 100, minimum: 1 }
+      description: Items per page (max 100)
+    LimitHistory:
+      name: limit
+      in: query
+      schema: { type: integer, default: 50, maximum: 200, minimum: 1 }
+      description: History items per page (max 200)
+    Status:
+      name: status
+      in: query
+      schema: { type: string }
+    ConditionFilter:
+      name: condition
+      in: query
+      schema: { type: string }
+    Search:
+      name: search
+      in: query
+      schema: { type: string }
+    SortField:
+      name: sortField
+      in: query
+      schema: { type: string, default: created_at }
+    SortDirection:
+      name: sortDirection
+      in: query
+      schema: { type: string, enum: [asc, desc], default: desc }
+    Minimal:
+      name: minimal
+      in: query
+      schema: { type: boolean }
+      description: If true, reduces returned fields
+    Extended:
+      name: extended
+      in: query
+      schema: { type: boolean }
+      description: If true, returns extended fields when available
+
+  responses:
+    Ok:
+      description: Successful
+      headers:
+        X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+        X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+        X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success: { type: boolean, example: true }
+              data: { type: object }
+              meta:
+                type: object
+                properties:
+                  rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+    Created:
+      description: Created
+      headers:
+        X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+        X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+        X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success: { type: boolean, example: true }
+              data: { type: object }
+              meta:
+                type: object
+                properties:
+                  rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiErrorEnvelope' }
+    Forbidden:
+      description: Forbidden (missing scope)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiErrorEnvelope' }
+    Validation:
+      description: Validation error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiErrorEnvelope' }
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+        X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+        X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiErrorEnvelope' }
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiErrorEnvelope' }
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiErrorEnvelope' }
+    ServiceUnavailable:
+      description: Upstream service unavailable
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiErrorEnvelope' }
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiErrorEnvelope' }
+
+  schemas:
+    MetaPagination:
+      type: object
+      properties:
+        page: { type: integer }
+        limit: { type: integer }
+        total: { type: integer }
+        total_pages: { type: integer }
+    MetaRateLimit:
+      type: object
+      properties:
+        limit: { type: integer, description: Requests allowed in the current window }
+        remaining: { type: integer, description: Requests remaining in the current window }
+        reset: { type: integer, format: int64, description: Reset time (epoch ms) }
+    ApiError:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details: { type: object, nullable: true }
+    ApiErrorEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        error: { $ref: '#/components/schemas/ApiError' }
+
+    # Stocks
+    StockSummary:
+      type: object
+      properties:
+        symbol: { type: string }
+        name: { type: string, nullable: true }
+        last_price: { type: number, nullable: true }
+        previous_close: { type: number, nullable: true }
+        ma_50: { type: number, nullable: true }
+        ma_200: { type: number, nullable: true }
+        rsi: { type: number, nullable: true }
+        type: { type: string, nullable: true }
+        is_active: { type: boolean }
+    StockDetails:
+      type: object
+      properties:
+        country: { type: string, nullable: true }
+        sector: { type: string, nullable: true }
+        industry: { type: string, nullable: true }
+        exchange: { type: string, nullable: true }
+        isin: { type: string, nullable: true }
+        alt_symbols: { type: object, nullable: true }
+    Stock:
+      allOf:
+        - $ref: '#/components/schemas/StockSummary'
+        - type: object
+          properties:
+            high_52w: { type: number, nullable: true }
+            low_52w: { type: number, nullable: true }
+            volume: { type: number, nullable: true }
+            volume_ma_20: { type: number, nullable: true }
+            volume_ma_100: { type: number, nullable: true }
+            details: { $ref: '#/components/schemas/StockDetails' }
+    StockSearchResult:
+      type: object
+      properties:
+        symbol: { type: string }
+        name: { type: string }
+        exchange: { type: string }
+        type: { type: string, nullable: true }
+        last_price: { type: number, nullable: true }
+    ApiSuccessStocksListEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/StockSummary' }
+        meta:
+          type: object
+          properties:
+            pagination: { $ref: '#/components/schemas/MetaPagination' }
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+    ApiSuccessStocksSearchEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/StockSearchResult' }
+        meta:
+          type: object
+          properties:
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+    ApiSuccessStockEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/Stock' }
+        meta:
+          type: object
+          properties:
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+    ApiSuccessStockWithFundamentalsEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          allOf:
+            - $ref: '#/components/schemas/Stock'
+            - type: object
+              properties:
+                fundamentals:
+                  type: object
+                  additionalProperties: true
+        meta:
+          type: object
+          properties:
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+
+    # Watchlist
+    WatchlistItem:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        stock_symbol: { type: string }
+        intention: { type: string, enum: [buy, sell] }
+        target_price: { type: number, nullable: true }
+        notes: { type: string, nullable: true }
+        initial_price: { type: number, nullable: true }
+        auto_alerts_enabled: { type: boolean }
+    StockBrief:
+      type: object
+      properties:
+        symbol: { type: string }
+        name: { type: string }
+        last_price: { type: number, nullable: true }
+    WatchlistItemWithStock:
+      allOf:
+        - $ref: '#/components/schemas/WatchlistItem'
+        - type: object
+          properties:
+            stocks:
+              type: object
+              allOf:
+                - $ref: '#/components/schemas/StockBrief'
+              nullable: true
+            active_alert_count: { type: integer, nullable: true }
+    CreateWatchlistItemRequest:
+      type: object
+      required: [stock_symbol, intention]
+      properties:
+        stock_symbol: { type: string }
+        stock_name: { type: string }
+        intention: { type: string, enum: [buy, sell] }
+        target_price: { type: number }
+        notes: { type: string }
+    UpdateWatchlistItemRequest:
+      type: object
+      properties:
+        target_price: { type: number, nullable: true }
+        notes: { type: string, nullable: true }
+        is_active: { type: boolean }
+        auto_alerts_enabled: { type: boolean }
+    SwapIntentionRequest:
+      type: object
+      required: [item_id, new_intention, stock_symbol]
+      properties:
+        item_id: { type: string }
+        new_intention: { type: string, enum: [buy, sell] }
+        stock_symbol: { type: string }
+    ApiSuccessWatchlistListEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/WatchlistItemWithStock' }
+        meta:
+          type: object
+          properties:
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+    ApiSuccessWatchlistItemEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { $ref: '#/components/schemas/WatchlistItemWithStock' }
+        meta:
+          type: object
+          properties:
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+    ApiSuccessWatchlistDeletedEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            deleted: { type: boolean }
+        meta:
+          type: object
+          properties:
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+    ApiSuccessWatchlistOrderEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            item: { $ref: '#/components/schemas/WatchlistItemWithStock' }
+            deletedAlerts: { type: integer }
+        meta:
+          type: object
+          properties:
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+
+    # API Keys
+    ApiKeySummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        key_prefix: { type: string }
+        rate_limit_tier: { type: string, enum: [basic, premium] }
+        is_active: { type: boolean }
+        created_at: { type: string, format: date-time }
+    ApiKeyCreated:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        key_prefix: { type: string }
+        created_at: { type: string, format: date-time }
+        rate_limit_tier: { type: string, enum: [basic, premium] }
+        api_key: { type: string, description: Plaintext API key (returned only on creation) }
+    ApiSuccessApiKeysListEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/ApiKeySummary' }
+        meta:
+          type: object
+          properties:
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+    ApiSuccessApiKeyEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/ApiKeyCreated' }
+        meta:
+          type: object
+          properties:
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+
+    # Alerts
+    AlertCondition:
+      type: string
+      enum: [
+        price_above,
+        price_below,
+        price_change_up,
+        price_change_down,
+        new_high,
+        new_low,
+        reminder,
+        daily_reminder,
+        ma_crossover_golden,
+        ma_crossover_death,
+        ma_touch_above,
+        ma_touch_below,
+        volume_change,
+        rsi_limit,
+        pe_ratio_below,
+        pe_ratio_above,
+        forward_pe_below,
+        forward_pe_above,
+        earnings_announcement,
+        dividend_ex_date,
+        dividend_payment
+      ]
+    AlertStatus:
+      type: string
+      enum: [active, paused, triggered, inactive]
+    CreateAlertRequest:
+      type: object
+      required: [symbol, condition]
+      properties:
+        symbol: { type: string }
+        condition: { $ref: '#/components/schemas/AlertCondition' }
+        email: { type: string, format: email, description: Optional for guest creation }
+        threshold: { type: number, nullable: true }
+        notification: { type: string, enum: [email, sms], default: email }
+        parameters: { type: object, additionalProperties: true }
+    Alert:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        symbol: { type: string }
+        condition: { $ref: '#/components/schemas/AlertCondition' }
+        threshold: { type: number, nullable: true }
+        notification: { type: string, enum: [email, sms] }
+        status: { $ref: '#/components/schemas/AlertStatus' }
+        created_at: { type: string, format: date-time }
+        triggered_at: { type: string, format: date-time, nullable: true }
+        initial_price: { type: number }
+        parameters: { type: object, nullable: true, additionalProperties: true }
+        stock:
+          type: object
+          nullable: true
+          properties:
+            name: { type: string }
+            last_price: { type: number }
+    UpdateAlertRequest:
+      type: object
+      description: Partial update of an alert.
+      properties:
+        condition: { $ref: '#/components/schemas/AlertCondition' }
+        threshold: { type: number, nullable: true }
+        notification: { type: string, enum: [email, sms] }
+        parameters: { type: object, nullable: true, additionalProperties: true }
+    AlertHistory:
+      type: object
+      properties:
+        alert_id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid, nullable: true }
+        email: { type: string, nullable: true }
+        symbol: { type: string }
+        action_type: { type: string, enum: [created, deleted, triggered, paused, reactivated, verified] }
+        action_timestamp: { type: string, format: date-time }
+        previous_status:
+          type: string
+          allOf:
+            - $ref: '#/components/schemas/AlertStatus'
+          nullable: true
+        new_status:
+          type: string
+          oneOf:
+            - $ref: '#/components/schemas/AlertStatus'
+            - type: string
+              enum: [deleted]
+          nullable: true
+        alert_data: { type: object, nullable: true }
+        trigger_price: { type: number, nullable: true }
+        notification_status: { type: string, nullable: true }
+    ApiSuccessAlertEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/Alert' }
+        meta:
+          type: object
+          properties:
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+    ApiSuccessAlertsListEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Alert' }
+        meta:
+          type: object
+          properties:
+            pagination: { $ref: '#/components/schemas/MetaPagination' }
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+    ApiSuccessAlertDeletedEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            alertId: { type: string, format: uuid }
+            status: { type: string, example: deleted }
+        meta:
+          type: object
+          properties:
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+    ApiSuccessAlertHistoryEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/AlertHistory' }
+        meta:
+          type: object
+          properties:
+            pagination: { $ref: '#/components/schemas/MetaPagination' }
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+    ApiSuccessAlertPausedEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            alertId: { type: string, format: uuid }
+            status: { type: string, enum: [paused] }
+        meta:
+          type: object
+          properties:
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+    ApiSuccessAlertActivatedEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            alertId: { type: string, format: uuid }
+            status: { type: string, enum: [active] }
+            initialPrice: { type: number }
+        meta:
+          type: object
+          properties:
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+    ApiSuccessAlertVerifyEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            alertId: { type: string, format: uuid }
+            symbol: { type: string }
+        meta:
+          type: object
+          properties:
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+
+    # Webhooks
+    Webhook:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        url: { type: string, format: uri }
+        events: { type: array, items: { type: string } }
+        is_active: { type: boolean }
+        created_at: { type: string, format: date-time }
+    WebhookCreated:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        url: { type: string, format: uri }
+        events: { type: array, items: { type: string } }
+        secret: { type: string }
+        is_active: { type: boolean }
+        created_at: { type: string, format: date-time }
+    ApiSuccessWebhookEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/Webhook' }
+        meta:
+          type: object
+          properties:
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+    ApiSuccessWebhookCreatedEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/WebhookCreated' }
+        meta:
+          type: object
+          properties:
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+    ApiSuccessWebhooksListEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Webhook' }
+        meta:
+          type: object
+          properties:
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+    ApiSuccessWebhookDeletedEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+        meta:
+          type: object
+          properties:
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+    ApiSuccessWebhookTestEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            status: { type: integer, example: 200 }
+            statusText: { type: string, example: OK }
+            response: { type: string }
+        meta:
+          type: object
+          properties:
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+
+    # User domain
+    UserSubscription:
+      type: object
+      properties:
+        id: { type: string, nullable: true }
+        account_type: { type: string, enum: [basic, premium, early_bird] }
+        status: { type: string }
+        is_early_bird: { type: boolean }
+        is_early_bird_eligible: { type: boolean }
+        is_premium: { type: boolean }
+        cancel_at_period_end: { type: boolean, nullable: true }
+        quotas:
+          type: object
+          properties:
+            sms: { type: integer }
+            whatsapp: { type: integer }
+        usage:
+          type: object
+          properties:
+            count: { type: integer }
+        current_period:
+          type: object
+          properties:
+            start: { type: string, format: date-time, nullable: true }
+            end: { type: string, format: date-time, nullable: true }
+        alert_count: { type: integer }
+        alert_quota: { type: integer, nullable: true, description: null indicates unlimited for premium }
+        watchlist_items_count: { type: integer }
+        watchlist_quota: { type: integer }
+
+    NewsletterPreferences:
+      type: object
+      properties:
+        newsletter_product_updates: { type: boolean }
+        newsletter_weekly_summary: { type: boolean }
+
+    ApiSuccessUserSubscriptionEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/UserSubscription' }
+        meta:
+          type: object
+          properties:
+            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+
+    

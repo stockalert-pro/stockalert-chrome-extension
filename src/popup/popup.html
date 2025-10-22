@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StockAlert Symbol Detector</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="popup-container">
+      <!-- Header -->
+      <div class="header">
+        <h1>StockAlert</h1>
+        <p class="subtitle">Symbol Detector</p>
+      </div>
+
+      <!-- API Key Section -->
+      <div id="api-key-section" class="section">
+        <h2>API Configuration</h2>
+        <div class="input-group">
+          <label for="api-key-input">StockAlert.pro API Key</label>
+          <input
+            type="password"
+            id="api-key-input"
+            placeholder="sk_..."
+            autocomplete="off"
+          />
+          <button id="save-api-key" class="btn btn-primary">Save API Key</button>
+        </div>
+        <p class="help-text">
+          Get your API key from
+          <a href="https://stockalert.pro/dashboard/api-keys" target="_blank">StockAlert.pro</a>
+        </p>
+      </div>
+
+      <!-- Alert Creation Section -->
+      <div id="alert-section" class="section" style="display: none">
+        <h2>Create Alert</h2>
+
+        <!-- Symbol Input -->
+        <div class="input-group">
+          <label for="alert-symbol">Stock Symbol</label>
+          <input
+            type="text"
+            id="alert-symbol"
+            placeholder="e.g., AAPL"
+            style="text-transform: uppercase"
+          />
+        </div>
+
+        <!-- Alert Type Selection -->
+        <div class="input-group">
+          <label for="alert-condition">Alert Type</label>
+          <select id="alert-condition">
+            <option value="">Select alert type...</option>
+            <optgroup label="Price Alerts">
+              <option value="price_above">Price Above</option>
+              <option value="price_below">Price Below</option>
+              <option value="price_change_up">Price Change Up (%)</option>
+              <option value="price_change_down">Price Change Down (%)</option>
+              <option value="new_high">New 52-Week High</option>
+              <option value="new_low">New 52-Week Low</option>
+            </optgroup>
+            <optgroup label="Technical Indicators">
+              <option value="ma_crossover_golden">Golden Cross (50/200 MA)</option>
+              <option value="ma_crossover_death">Death Cross (50/200 MA)</option>
+              <option value="ma_touch_above">MA Touch Above</option>
+              <option value="ma_touch_below">MA Touch Below</option>
+              <option value="volume_change">Volume Change</option>
+              <option value="rsi_limit">RSI Limit</option>
+            </optgroup>
+            <optgroup label="Fundamental">
+              <option value="pe_ratio_below">P/E Ratio Below</option>
+              <option value="pe_ratio_above">P/E Ratio Above</option>
+              <option value="forward_pe_below">Forward P/E Below</option>
+              <option value="forward_pe_above">Forward P/E Above</option>
+              <option value="earnings_announcement">Earnings Announcement</option>
+            </optgroup>
+            <optgroup label="Dividend">
+              <option value="dividend_ex_date">Dividend Ex-Date</option>
+              <option value="dividend_payment">Dividend Payment</option>
+            </optgroup>
+            <optgroup label="Reminders">
+              <option value="reminder">One-Time Reminder</option>
+              <option value="daily_reminder">Daily Reminder</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <!-- Threshold Input (conditional) -->
+        <div id="threshold-group" class="input-group" style="display: none">
+          <label for="alert-threshold">
+            <span id="threshold-label">Threshold</span>
+            <span id="threshold-unit"></span>
+          </label>
+          <input type="number" id="alert-threshold" step="any" />
+        </div>
+
+        <!-- Parameters (conditional) -->
+        <div id="parameters-group" style="display: none"></div>
+
+        <!-- Create Alert Button -->
+        <button id="create-alert-btn" class="btn btn-primary" disabled>Create Alert</button>
+
+        <div id="alert-status" class="status-message" style="display: none"></div>
+      </div>
+
+      <!-- Watchlist Section -->
+      <div id="watchlist-section" class="section">
+        <div class="section-header">
+          <h2>Watchlist</h2>
+        </div>
+        <div id="watchlist-container">
+          <p class="empty-state">Loading...</p>
+        </div>
+      </div>
+
+      <!-- Settings Section -->
+      <div id="settings-section" class="section">
+        <h2>Settings</h2>
+
+        <div class="checkbox-group">
+          <label>
+            <input type="checkbox" id="setting-auto-detect" checked />
+            <span>Auto-detect symbols on webpages</span>
+          </label>
+        </div>
+
+        <div class="checkbox-group">
+          <label>
+            <input type="checkbox" id="setting-highlight" checked />
+            <span>Highlight detected symbols</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <p>
+          Powered by
+          <a href="https://stockalert.pro" target="_blank">StockAlert.pro</a>
+        </p>
+      </div>
+    </div>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

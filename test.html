@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockAlert Extension Test Page</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      line-height: 1.6;
+    }
+    h1 { color: #111827; }
+    h2 { color: #374151; margin-top: 40px; }
+    .test-section {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .symbols {
+      font-size: 18px;
+      line-height: 2;
+    }
+  </style>
+</head>
+<body>
+  <h1>StockAlert Chrome Extension - Test Page</h1>
+
+  <p>This page contains various stock symbols to test the extension's detection capabilities.</p>
+
+  <div class="test-section">
+    <h2>Technology Stocks</h2>
+    <p class="symbols">
+      Apple (AAPL) is trading higher today. Microsoft (MSFT) and Google (GOOGL) are also showing strength.
+      NVIDIA (NVDA) continues its rally. Tesla (TSLA) is volatile as usual.
+    </p>
+  </div>
+
+  <div class="test-section">
+    <h2>Financial Stocks</h2>
+    <p class="symbols">
+      JPMorgan Chase (JPM) reported strong earnings. Bank of America (BAC) and Wells Fargo (WFC)
+      are also in focus. Goldman Sachs (GS) upgraded its outlook.
+    </p>
+  </div>
+
+  <div class="test-section">
+    <h2>Mixed Content</h2>
+    <p class="symbols">
+      Investors are watching AMD, INTC, and META closely. The S&P 500 includes companies like
+      V (Visa), MA (Mastercard), and DIS (Disney). Berkshire Hathaway (BRK.A and BRK.B)
+      are Warren Buffett's holdings.
+    </p>
+  </div>
+
+  <div class="test-section">
+    <h2>News Article Example</h2>
+    <p>
+      In today's trading session, AAPL reached a new high of $195, while TSLA dropped 3% to $242.
+      Analysts remain bullish on NVDA despite recent volatility. The tech sector, including MSFT,
+      GOOGL, and META, continues to drive market gains. Energy stocks like XOM and CVX are also
+      showing strength amid rising oil prices.
+    </p>
+  </div>
+
+  <div class="test-section">
+    <h2>Should NOT be detected</h2>
+    <p>
+      Common words like THE, AND, FOR should not be highlighted. We use API and HTML in our code.
+      The CEO and CFO attended the meeting. USA and EUR currency pairs.
+    </p>
+  </div>
+
+  <h2>Instructions</h2>
+  <ol>
+    <li>Open Chrome DevTools (F12) and check the Console for <code>[StockAlert]</code> messages</li>
+    <li>Stock symbols above should be highlighted with a blue underline</li>
+    <li>Click any highlighted symbol to see the overlay</li>
+    <li>If nothing happens, check:
+      <ul>
+        <li>Extension is loaded in chrome://extensions/</li>
+        <li>Extension icon shows in toolbar</li>
+        <li>No errors in console</li>
+        <li>"Auto-detect" is enabled in extension settings</li>
+      </ul>
+    </li>
+  </ol>
+
+  <h2>Debug Info</h2>
+  <div id="debug" style="background: #111; color: #0f0; padding: 20px; border-radius: 8px; font-family: monospace; font-size: 12px;">
+    <div id="debug-content">Waiting for extension...</div>
+  </div>
+
+  <script>
+    // Debug helper
+    setTimeout(() => {
+      const highlightedSymbols = document.querySelectorAll('.stockalert-symbol');
+      const debugDiv = document.getElementById('debug-content');
+
+      if (highlightedSymbols.length > 0) {
+        debugDiv.innerHTML = `
+          ✅ Extension working!<br>
+          Found ${highlightedSymbols.length} highlighted symbols:<br>
+          ${Array.from(highlightedSymbols).map(el => el.textContent).join(', ')}
+        `;
+      } else {
+        debugDiv.innerHTML = `
+          ❌ No symbols detected<br>
+          Possible issues:<br>
+          - Extension not loaded<br>
+          - Auto-detect disabled<br>
+          - Content script error (check console)
+        `;
+      }
+    }, 2000);
+  </script>
+</body>
+</html>

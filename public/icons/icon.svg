@@ -1,0 +1,13 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="128" height="128" rx="24" fill="#3B82F6"/>
+
+  <!-- Chart Line -->
+  <path d="M24 88L40 72L56 80L72 56L88 68L104 44" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Alert Bell -->
+  <g transform="translate(84, 16)">
+    <path d="M20 28C24.4183 28 28 24.4183 28 20C28 15.5817 24.4183 12 20 12C15.5817 12 12 15.5817 12 20C12 24.4183 15.5817 28 20 28Z" fill="#EF4444"/>
+    <path d="M20 8C18.9 8 18 8.9 18 10V11.29C14.03 12.17 11 15.71 11 20V26L9 28V29H31V28L29 26V20C29 15.71 25.97 12.17 22 11.29V10C22 8.9 21.1 8 20 8ZM20 32C21.1 32 22 31.1 22 30H18C18 31.1 18.89 32 20 32Z" fill="white"/>
+  </g>
+</svg>
