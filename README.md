@@ -229,7 +229,7 @@ The extension uses the [StockAlert.pro API v1](https://stockalert.pro/api/docs):
 
 ## Contributing
 
-This extension is part of the [StockAlert.pro consumer integrations](https://github.com/stockalert/stockalert-consumer).
+This extension is part of the [StockAlert.pro](https://github.com/stockalert-pro) organization.
 
 To contribute:
 
@@ -245,17 +245,18 @@ Proprietary - StockAlert.pro
 
 ## Support
 
-- Documentation: https://docs.stockalert.pro
 - API Reference: https://stockalert.pro/api/docs
 - Support: support@stockalert.pro
-- Issues: [GitHub Issues](https://github.com/stockalert/stockalert-consumer/issues)
+- Issues: [GitHub Issues](https://github.com/stockalert-pro/stockalert-chrome-extension/issues)
 
 ## Related Projects
 
-- [JavaScript SDK](../stockalert-js-sdk) - Official JS/TS SDK
-- [Python SDK](../stockalert-python-sdk) - Official Python SDK
-- [n8n Nodes](../n8n-nodes-stockalert) - Workflow automation
-- [Slack App](../stockalert-slack-app) - Slack integration
+Explore other StockAlert.pro integrations at [github.com/stockalert-pro](https://github.com/stockalert-pro):
+
+- JavaScript SDK - Official JS/TS SDK
+- Python SDK - Official Python SDK
+- n8n Nodes - Workflow automation
+- Slack App - Slack integration
 
 ---
 
