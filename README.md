@@ -12,9 +12,9 @@
   - Technical indicators (MA crossovers, RSI, volume)
   - Fundamental alerts (P/E ratios, earnings, dividends)
   - Reminders (one-time, daily)
-- **Watchlist Management**: Local watchlist with export/import functionality
+- **Watchlist Management**: API-based watchlist synced across devices
 - **Real-time Notifications**: Chrome notifications for alert creation
-- **Privacy-Focused**: All data stored locally, API calls only when creating alerts
+- **Privacy-Focused**: API key stored locally, encrypted by Chrome
 
 ## Installation
 
@@ -53,6 +53,8 @@ _Coming soon: Chrome Web Store listing_
 4. Create a new API key with required scopes:
    - `alerts:read`
    - `alerts:write`
+   - `watchlist:read`
+   - `watchlist:write`
 
 ### 2. Configure Extension
 
@@ -89,18 +91,13 @@ _Coming soon: Chrome Web Store listing_
 **Add to Watchlist**:
 
 - Click highlighted symbol → "⭐ Add to Watchlist"
-- Symbol is saved locally
+- Symbol is saved via API and synced across devices
 
 **Remove from Watchlist**:
 
 - Open extension popup
 - Click "✕" next to symbol in watchlist section
-
-**Export Watchlist**:
-
-- Open extension popup
-- Click "📥" button in watchlist section
-- JSON file downloads automatically
+- Changes are synced via API
 
 ## Alert Types Reference
 
@@ -198,10 +195,11 @@ The extension uses the [StockAlert.pro API v1](https://stockalert.pro/api/docs):
 ## Privacy & Security
 
 - **API Key Storage**: Encrypted in Chrome storage (local only, not synced)
-- **No Data Collection**: Extension does not collect or transmit user data
+- **No Tracking**: Extension does not collect analytics or usage data
 - **HTTPS Only**: All API calls over secure HTTPS
-- **Minimal Permissions**: Only requires `storage` and `activeTab`
-- **Local Watchlist**: Stored locally, never transmitted
+- **Minimal Permissions**: Only requires `storage`, `activeTab`, and `notifications`
+- **API-Based Watchlist**: Watchlist stored securely on StockAlert.pro servers
+- **No Third Parties**: Direct integration with StockAlert.pro API only
 
 ## Troubleshooting
 
