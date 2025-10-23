@@ -107,14 +107,14 @@ export const PaginationMetaSchema = z.object({
   page: z.number(),
   limit: z.number(),
   total: z.number(),
-  totalPages: z.number(),
+  total_pages: z.number(),
 });
 
 export const ApiSuccessAlertEnvelopeSchema = z.object({
   success: z.literal(true),
   data: AlertSchema,
   meta: z.object({
-    rateLimit: RateLimitMetaSchema,
+    rate_limit: RateLimitMetaSchema,
   }),
 });
 
@@ -123,7 +123,7 @@ export const ApiSuccessAlertsListEnvelopeSchema = z.object({
   data: z.array(AlertSchema),
   meta: z.object({
     pagination: PaginationMetaSchema,
-    rateLimit: RateLimitMetaSchema,
+    rate_limit: RateLimitMetaSchema,
   }),
 });
 
@@ -195,7 +195,7 @@ export const ApiSuccessWatchlistListEnvelopeSchema = z.object({
   success: z.literal(true),
   data: z.array(WatchlistItemSchema),
   meta: z.object({
-    rateLimit: RateLimitMetaSchema,
+    rate_limit: RateLimitMetaSchema,
   }),
 });
 
@@ -203,7 +203,7 @@ export const ApiSuccessWatchlistItemEnvelopeSchema = z.object({
   success: z.literal(true),
   data: WatchlistItemSchema,
   meta: z.object({
-    rateLimit: RateLimitMetaSchema,
+    rate_limit: RateLimitMetaSchema,
   }),
 });
 
