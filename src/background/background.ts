@@ -206,7 +206,10 @@ async function handleAddToWatchlist(payload: { symbol: string }) {
     throw new Error('API key not configured');
   }
 
-  const item = await apiClient.addToWatchlist({ stock_symbol: payload.symbol });
+  const item = await apiClient.addToWatchlist({
+    stock_symbol: payload.symbol,
+    intention: 'buy' // Default intention
+  });
 
   chrome.notifications.create({
     type: 'basic',

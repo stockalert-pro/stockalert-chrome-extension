@@ -443,7 +443,10 @@ async function handleWatchlistToggle(symbol: string, inWatchlist: boolean) {
         showNotification(`${symbol} removed from watchlist`, 'success');
       }
     } else {
-      await apiClient.addToWatchlist({ stock_symbol: symbol });
+      await apiClient.addToWatchlist({
+        stock_symbol: symbol,
+        intention: 'buy' // Default intention
+      });
       console.log(`[StockAlert] Added ${symbol} to watchlist`);
       showNotification(`${symbol} added to watchlist`, 'success');
     }

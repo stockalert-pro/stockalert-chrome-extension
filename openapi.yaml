@@ -1,11 +1,11 @@
 openapi: 3.0.3
 info:
-  title: StockAlert.pro API (v1)
-  version: 1.0.0
+  title: StockAlert.pro API
+  version: 1.1.0
   contact:
     name: StockAlert.pro Support
     email: support@stockalert.pro
-    url: https://stockalert.pro/support
+    url: https://stockalert.pro/imprint
   license:
     name: Proprietary
     url: https://stockalert.pro/terms
@@ -45,9 +45,11 @@ paths:
       tags: [Stocks]
       x-internal: true
       operationId: stocksList
-      summary: List stocks (v1)
+      summary: List stocks
       description: Paginated list of stocks with optional search and filters.
       # Internal: guest allowed for first‑party only; API key not supported
+      security:
+        - BearerAuth: []
       parameters:
         - $ref: '#/components/parameters/Search'
         - $ref: '#/components/parameters/Page'
@@ -63,7 +65,7 @@ paths:
           style: form
           explode: false
           description: "CSV projection: `details` (include stock_details), `fundamentals` (include stock_fundamentals)"
-        - name: includeInactive
+        - name: include_inactive
           in: query
           schema: { type: boolean }
           description: Include inactive stocks if `true` (default returns only active)
@@ -86,7 +88,7 @@ paths:
       tags: [Stocks]
       x-internal: true
       operationId: stocksUpsert
-      summary: Upsert stock (v1)
+      summary: Upsert stock
       description: |
         Ensures a stock exists (create if missing). May enqueue background jobs.
       x-required-scopes: [stocks:write]
@@ -126,11 +128,11 @@ paths:
                     properties:
                       symbol: { type: string }
                       created: { type: boolean }
-                      jobsQueued: { type: integer }
+                      jobs_queued: { type: integer }
                   meta:
                     type: object
                     properties:
-                      rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+                      rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '422': { $ref: '#/components/responses/Validation' }
         '429': { $ref: '#/components/responses/RateLimited' }
@@ -138,11 +140,13 @@ paths:
   /api/v1/stocks/{symbol}:
     get:
       tags: [Stocks]
-      x-internal: true
       operationId: stocksGet
-      summary: Get stock detail (v1)
+      summary: Get stock detail
       description: Returns a single stock with optional fundamentals.
-      # Internal: guest allowed for first‑party only; API key not supported
+      x-required-scopes: [stocks:read]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
       parameters:
         - name: symbol
           in: path
@@ -176,7 +180,7 @@ paths:
       tags: [Stocks]
       x-internal: true
       operationId: stocksPatch
-      summary: Update stock (v1)
+      summary: Update stock
       description: Update mutable fields like active state.
       security:
         - BearerAuth: []
@@ -205,9 +209,11 @@ paths:
       tags: [Stocks]
       x-internal: true
       operationId: stocksEarnings
-      summary: Get earnings timeline (v1)
+      summary: Get earnings timeline
       description: Returns upcoming and recent earnings information.
       # Internal: guest allowed for first‑party only; API key not supported
+      security:
+        - BearerAuth: []
       parameters:
         - name: symbol
           in: path
@@ -233,7 +239,7 @@ paths:
           in: path
           required: true
           schema: { type: string }
-        - name: investmentHorizon
+        - name: investment_horizon
           in: query
           required: false
           schema: { type: integer, minimum: 1 }
@@ -255,9 +261,11 @@ paths:
       tags: [Stocks]
       x-internal: true
       operationId: quotesBulk
-      summary: Get bulk quotes (v1)
+      summary: Get bulk quotes
       description: Lightweight prices for multiple symbols.
       # Internal: guest allowed for first‑party only; API key not supported
+      security:
+        - BearerAuth: []
       parameters:
         - name: symbols
           in: query
@@ -278,7 +286,7 @@ paths:
     get:
       tags: [Watchlist]
       operationId: watchlistList
-      summary: List watchlist items (v1)
+      summary: List watchlist items
       description: Returns current user's watchlist items.
       x-required-scopes: [watchlist:read]
       security:
@@ -311,13 +319,13 @@ paths:
                           name: "Apple Inc."
                           last_price: 189.2
                     meta:
-                      rateLimit: { limit: 60, remaining: 59, reset: 1736180400000 }
+                      rate_limit: { limit: 60, remaining: 59, reset: 1736180400000 }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '429': { $ref: '#/components/responses/RateLimited' }
     post:
       tags: [Watchlist]
       operationId: watchlistCreate
-      summary: Add item to watchlist (v1)
+      summary: Add item to watchlist
       description: Creates a new watchlist item.
       x-required-scopes: [watchlist:write]
       security:
@@ -354,18 +362,18 @@ paths:
                         name: "Microsoft Corp."
                         last_price: 300.1
                     meta:
-                      rateLimit: { limit: 60, remaining: 59, reset: 1736180400000 }
+                      rate_limit: { limit: 60, remaining: 59, reset: 1736180400000 }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
         '429': { $ref: '#/components/responses/RateLimited' }
 
   /api/v1/watchlist/{id}:
     patch:
       tags: [Watchlist]
       operationId: watchlistUpdate
-      summary: Update watchlist item (v1)
+      summary: Update watchlist item
       description: Update fields of an existing watchlist item.
       x-required-scopes: [watchlist:write]
       security:
@@ -408,14 +416,14 @@ paths:
                         name: "Microsoft Corp."
                         last_price: 301.5
                     meta:
-                      rateLimit: { limit: 60, remaining: 59, reset: 1736180400000 }
+                      rate_limit: { limit: 60, remaining: 59, reset: 1736180400000 }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/RateLimited' }
     delete:
       tags: [Watchlist]
       operationId: watchlistDelete
-      summary: Delete watchlist item (v1)
+      summary: Delete watchlist item
       description: Delete an item from the watchlist.
       x-required-scopes: [watchlist:write]
       security:
@@ -444,7 +452,7 @@ paths:
                     data:
                       deleted: true
                     meta:
-                      rateLimit: { limit: 60, remaining: 59, reset: 1736180400000 }
+                      rate_limit: { limit: 60, remaining: 59, reset: 1736180400000 }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/RateLimited' }
@@ -453,7 +461,7 @@ paths:
     put:
       tags: [Watchlist]
       operationId: watchlistSwapIntention
-      summary: Swap intention (buy/sell) and reanalyze (v1)
+      summary: Swap intention (buy/sell) and reanalyze
       description: Resets initial price and queues analysis for intention change.
       x-required-scopes: [watchlist:write]
       security:
@@ -490,9 +498,9 @@ paths:
                           symbol: "AAPL"
                           name: "Apple Inc."
                           last_price: 190.0
-                      deletedAlerts: 2
+                      deleted_alerts: 2
                     meta:
-                      rateLimit: { limit: 60, remaining: 59, reset: 1736180400000 }
+                      rate_limit: { limit: 60, remaining: 59, reset: 1736180400000 }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/RateLimited' }
@@ -500,8 +508,9 @@ paths:
   /api/v1/api-keys:
     get:
       tags: [API Keys]
+      x-internal: true
       operationId: apiKeysList
-      summary: List API keys (v1)
+      summary: List API keys
       description: Returns API keys for the authenticated user (prefix only).
       x-required-scopes: [api-keys:read]
       security:
@@ -529,14 +538,15 @@ paths:
                         is_active: true
                         created_at: "2025-01-01T12:00:00.000Z"
                     meta:
-                      rateLimit: { limit: 10000, remaining: 9999, reset: 1736180400000 }
+                      rate_limit: { limit: 10000, remaining: 9999, reset: 1736180400000 }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '429': { $ref: '#/components/responses/RateLimited' }
     post:
       tags: [API Keys]
+      x-internal: true
       operationId: apiKeysCreate
-      summary: Create API key (v1)
+      summary: Create API key
       description: Creates a new API key. Plaintext returned once.
       x-required-scopes: [api-keys:write]
       security:
@@ -571,9 +581,9 @@ paths:
                       key_prefix: "sk_ab12cd3"
                       created_at: "2025-01-01T12:00:00.000Z"
                       rate_limit_tier: "premium"
-                      apiKey: "sk_abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+                      api_key: "sk_abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
                     meta:
-                      rateLimit: { limit: 10000, remaining: 9999, reset: 1736180400000 }
+                      rate_limit: { limit: 10000, remaining: 9999, reset: 1736180400000 }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -582,8 +592,9 @@ paths:
   /api/v1/api-keys/{id}:
     delete:
       tags: [API Keys]
+      x-internal: true
       operationId: apiKeysDelete
-      summary: Delete API key (v1)
+      summary: Delete API key
       description: Deletes the specified API key.
       x-required-scopes: [api-keys:write]
       security:
@@ -613,7 +624,7 @@ paths:
                   meta:
                     type: object
                     properties:
-                      rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+                      rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
               examples:
                 example:
                   value:
@@ -621,7 +632,7 @@ paths:
                     data:
                       id: "00000000-0000-4000-8000-000000000004"
                     meta:
-                      rateLimit: { limit: 10000, remaining: 9999, reset: 1736180400000 }
+                      rate_limit: { limit: 10000, remaining: 9999, reset: 1736180400000 }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -631,7 +642,7 @@ paths:
     get:
       tags: [Alerts]
       operationId: alertsList
-      summary: List alerts (v1)
+      summary: List alerts
       description: Get a paginated list of alerts.
       x-required-scopes: [alerts:read]
       security:
@@ -673,15 +684,15 @@ paths:
                         initial_price: 189.2
                         parameters: null
                     meta:
-                      pagination: { page: 1, limit: 50, total: 1, totalPages: 1 }
-                      rateLimit: { limit: 100, remaining: 99, reset: 1736180400000 }
+                      pagination: { page: 1, limit: 50, total: 1, total_pages: 1 }
+                      rate_limit: { limit: 100, remaining: 99, reset: 1736180400000 }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '429': { $ref: '#/components/responses/RateLimited' }
     post:
       tags: [Alerts]
       operationId: alertsCreate
-      summary: Create alert (v1)
+      summary: Create alert
       description: |
         Create a new alert.
         - Guest (no auth): allowed only when an `email` is supplied. The alert is created as `inactive` and must be verified via `POST /api/v1/alerts/verify`.
@@ -720,7 +731,7 @@ paths:
                       initial_price: 189.2
                       parameters: null
                     meta:
-                      rateLimit: { limit: 100, remaining: 99, reset: 1736180400000 }
+                      rate_limit: { limit: 100, remaining: 99, reset: 1736180400000 }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -732,7 +743,7 @@ paths:
     get:
       tags: [Alerts]
       operationId: alertsGet
-      summary: Get alert (v1)
+      summary: Get alert
       description: Get alert by id.
       x-required-scopes: [alerts:read]
       security:
@@ -762,7 +773,7 @@ paths:
     put:
       tags: [Alerts]
       operationId: alertsUpdate
-      summary: Update alert (v1)
+      summary: Update alert
       description: Full update of an alert.
       x-required-scopes: [alerts:write]
       security:
@@ -798,7 +809,7 @@ paths:
     delete:
       tags: [Alerts]
       operationId: alertsDelete
-      summary: Delete alert (v1)
+      summary: Delete alert
       description: Delete an alert by id.
       x-required-scopes: [alerts:write]
       security:
@@ -825,10 +836,10 @@ paths:
                   value:
                     success: true
                     data:
-                      alertId: "2f8d0f7b-2222-4c3a-b1c3-222222222222"
+                      alert_id: "2f8d0f7b-2222-4c3a-b1c3-222222222222"
                       status: deleted
                     meta:
-                      rateLimit: { limit: 100, remaining: 99, reset: 1736180400000 }
+                      rate_limit: { limit: 100, remaining: 99, reset: 1736180400000 }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -839,7 +850,7 @@ paths:
     post:
       tags: [Alerts]
       operationId: alertsPause
-      summary: Pause alert (v1)
+      summary: Pause alert
       description: Pause an active alert.
       x-required-scopes: [alerts:write]
       security:
@@ -866,10 +877,10 @@ paths:
                   value:
                     success: true
                     data:
-                      alertId: "2f8d0f7b-2222-4c3a-b1c3-222222222222"
+                      alert_id: "2f8d0f7b-2222-4c3a-b1c3-222222222222"
                       status: paused
                     meta:
-                      rateLimit: { limit: 100, remaining: 99, reset: 1736180400000 }
+                      rate_limit: { limit: 100, remaining: 99, reset: 1736180400000 }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -880,7 +891,7 @@ paths:
     post:
       tags: [Alerts]
       operationId: alertsActivate
-      summary: Activate alert (v1)
+      summary: Activate alert
       description: Reactivate a paused or inactive alert.
       x-required-scopes: [alerts:write]
       security:
@@ -907,11 +918,11 @@ paths:
                   value:
                     success: true
                     data:
-                      alertId: "2f8d0f7b-2222-4c3a-b1c3-222222222222"
+                      alert_id: "2f8d0f7b-2222-4c3a-b1c3-222222222222"
                       status: active
-                      initialPrice: 189.2
+                      initial_price: 189.2
                     meta:
-                      rateLimit: { limit: 100, remaining: 99, reset: 1736180400000 }
+                      rate_limit: { limit: 100, remaining: 99, reset: 1736180400000 }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -923,7 +934,7 @@ paths:
     get:
       tags: [Alerts]
       operationId: alertsHistory
-      summary: Alert history (v1)
+      summary: Alert history
       description: Get history of an alert.
       x-required-scopes: [alerts:read]
       security:
@@ -960,8 +971,8 @@ paths:
                         new_status: triggered
                         trigger_price: 205.5
                     meta:
-                      pagination: { page: 1, limit: 50, total: 1, totalPages: 1 }
-                      rateLimit: { limit: 100, remaining: 99, reset: 1736180400000 }
+                      pagination: { page: 1, limit: 50, total: 1, total_pages: 1 }
+                      rate_limit: { limit: 100, remaining: 99, reset: 1736180400000 }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
@@ -969,7 +980,7 @@ paths:
     get:
       tags: [Alerts]
       operationId: alertsStats
-      summary: Alerts statistics (v1)
+      summary: Alerts statistics
       description: Returns total alert counts per status.
       x-required-scopes: [alerts:stats]
       security:
@@ -984,9 +995,12 @@ paths:
       tags: [Alerts]
       x-internal: true
       operationId: alertsVerify
-      summary: Verify alert (v1)
-      description: Verify alert via token (guest allowed)
-      security: []
+      summary: Verify alert
+      description: Verify alert via token (internal; first‑party only)
+      x-required-scopes: [alerts:write]
+      # Internal: requires Bearer auth; API key not supported
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -1016,7 +1030,7 @@ paths:
       tags: [Alerts]
       x-internal: true
       operationId: alertsHistoryLog
-      summary: Log alert history (v1)
+      summary: Log alert history
       description: Append a history entry (internal).
       security:
         - BearerAuth: []
@@ -1032,7 +1046,7 @@ paths:
     get:
       tags: [Webhooks]
       operationId: webhooksList
-      summary: List webhooks (v1)
+      summary: List webhooks
       description: Returns configured webhooks.
       x-required-scopes: [webhooks:read]
       security:
@@ -1061,12 +1075,12 @@ paths:
                         is_active: true
                         created_at: "2025-01-01T12:00:00.000Z"
                     meta:
-                      rateLimit: { limit: 1000, remaining: 999, reset: 1736180400000 }
+                      rate_limit: { limit: 1000, remaining: 999, reset: 1736180400000 }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '429': { $ref: '#/components/responses/RateLimited' }
     post:
-      summary: Create webhook (v1)
+      summary: Create webhook
       tags: [Webhooks]
       operationId: webhooksCreate
       description: Create a new webhook.
@@ -1108,7 +1122,7 @@ paths:
                       is_active: true
                       created_at: "2025-01-01T12:00:00.000Z"
                     meta:
-                      rateLimit: { limit: 1000, remaining: 999, reset: 1736180400000 }
+                      rate_limit: { limit: 1000, remaining: 999, reset: 1736180400000 }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -1116,7 +1130,7 @@ paths:
 
   /api/v1/webhooks/{id}:
     get:
-      summary: Get webhook (v1)
+      summary: Get webhook
       tags: [Webhooks]
       operationId: webhooksGet
       description: Get webhook by id.
@@ -1152,13 +1166,13 @@ paths:
                       is_active: true
                       created_at: "2025-01-01T12:00:00.000Z"
                     meta:
-                      rateLimit: { limit: 1000, remaining: 999, reset: 1736180400000 }
+                      rate_limit: { limit: 1000, remaining: 999, reset: 1736180400000 }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/RateLimited' }
     delete:
-      summary: Delete webhook (v1)
+      summary: Delete webhook
       tags: [Webhooks]
       operationId: webhooksDelete
       description: Delete a webhook by id.
@@ -1189,7 +1203,7 @@ paths:
                     data:
                       id: "00000000-0000-4000-8000-000000000005"
                     meta:
-                      rateLimit: { limit: 1000, remaining: 999, reset: 1736180400000 }
+                      rate_limit: { limit: 1000, remaining: 999, reset: 1736180400000 }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -1197,7 +1211,7 @@ paths:
 
   /api/v1/webhooks/test:
     post:
-      summary: Send test webhook (v1)
+      summary: Send test webhook
       tags: [Webhooks]
       operationId: webhooksTest
       description: Sends a test event to your webhook URL.
@@ -1232,10 +1246,10 @@ paths:
                     success: true
                     data:
                       status: 200
-                      statusText: OK
+                      status_text: OK
                       response: "ok"
                     meta:
-                      rateLimit: { limit: 5, remaining: 4, reset: 1736180400000 }
+                      rate_limit: { limit: 5, remaining: 4, reset: 1736180400000 }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
@@ -1248,7 +1262,7 @@ paths:
       tags: [Market]
       x-internal: true
       operationId: marketPerformance
-      summary: Market performance for symbols (v1)
+      summary: Market performance for symbols
       description: |
         Returns performance percentage for the requested symbols and time period using adjusted close prices.
       security:
@@ -1266,7 +1280,7 @@ paths:
           description: Comma-separated symbols (e.g., AAPL,SPY,ACWI)
         - name: period
           in: query
-          schema: { type: string, enum: ["1M","3M","6M","1Y","3Y","5Y","10Y"] }
+          schema: { type: string, enum: ["1m","3m","6m","1y","3y","5y","10y"] }
           description: Optional period for which to return performance
       responses:
         '200': { $ref: '#/components/responses/Ok' }
@@ -1281,7 +1295,7 @@ paths:
       tags: [Market]
       x-internal: true
       operationId: marketUndervalued
-      summary: Top undervalued stocks by sector-relative P/E (v1)
+      summary: Top undervalued stocks by sector-relative P/E
       description: Returns undervalued stocks based on P/E vs. sector average.
       security:
         - ApiKeyAuth: []
@@ -1353,7 +1367,7 @@ paths:
       x-internal: true
       operationId: marketBillionaires
       summary: Top 100 billionaires snapshot (internal)
-      description: Returns billionaire data with lastFetched and source. Uses Supabase cache with weekday/weekend semantics.
+      description: Returns billionaire data with last_updated and source. Uses Supabase cache with weekday/weekend semantics.
       security:
         - BearerAuth: []
       responses:
@@ -1371,7 +1385,9 @@ paths:
         Daily AI stock analysis with scoring from -100 (Avoid) to +100 (Strong Buy).
         Combines technical indicators, fundamentals, and sentiment analysis.
 
-        Cached for 12 hours. Public endpoint (no auth required).
+        Cached for 12 hours. Internal endpoint; authentication required.
+      security:
+        - BearerAuth: []
       parameters:
         - name: limit
           in: query
@@ -1444,7 +1460,7 @@ paths:
                                 pb: { oneOf: [{ type: number }, { type: string, enum: ["n/a"] }] }
                                 ps: { oneOf: [{ type: number }, { type: string, enum: ["n/a"] }] }
                                 beta: { oneOf: [{ type: number }, { type: string, enum: ["n/a"] }] }
-                                rsi14: { oneOf: [{ type: number }, { type: string, enum: ["n/a"] }] }
+                                rsi: { oneOf: [{ type: number }, { type: string, enum: ["n/a"] }] }
                                 pos_52w: { type: string }
                                 vol_ratio: { oneOf: [{ type: number }, { type: string, enum: ["n/a"] }] }
                       updated_at: { type: string, format: date-time }
@@ -1791,7 +1807,7 @@ paths:
                       watchlist_items_count: 9
                       watchlist_quota: 100
                     meta:
-                      rateLimit: { limit: 30, remaining: 29, reset: 1736180400000 }
+                      rate_limit: { limit: 30, remaining: 29, reset: 1736180400000 }
                 basic:
                   summary: Basic user example
                   value:
@@ -1811,7 +1827,7 @@ paths:
                       watchlist_items_count: 2
                       watchlist_quota: 10
                     meta:
-                      rateLimit: { limit: 30, remaining: 29, reset: 1736180400000 }
+                      rate_limit: { limit: 30, remaining: 29, reset: 1736180400000 }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '429': { $ref: '#/components/responses/RateLimited' }
         '500': { $ref: '#/components/responses/InternalError' }
@@ -2045,21 +2061,21 @@ components:
     Status:
       name: status
       in: query
-      schema: { type: string }
+      schema: { $ref: '#/components/schemas/AlertStatus' }
     ConditionFilter:
       name: condition
       in: query
-      schema: { type: string }
+      schema: { $ref: '#/components/schemas/AlertCondition' }
     Search:
       name: search
       in: query
       schema: { type: string }
     SortField:
-      name: sortField
+      name: sort_field
       in: query
       schema: { type: string, default: created_at }
     SortDirection:
-      name: sortDirection
+      name: sort_direction
       in: query
       schema: { type: string, enum: [asc, desc], default: desc }
     Minimal:
@@ -2090,7 +2106,7 @@ components:
               meta:
                 type: object
                 properties:
-                  rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+                  rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
     Created:
       description: Created
       headers:
@@ -2107,7 +2123,7 @@ components:
               meta:
                 type: object
                 properties:
-                  rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+                  rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
     Unauthorized:
       description: Unauthorized
       content:
@@ -2139,6 +2155,11 @@ components:
           schema: { $ref: '#/components/schemas/ApiErrorEnvelope' }
     BadRequest:
       description: Bad request
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiErrorEnvelope' }
+    Conflict:
+      description: Conflict
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ApiErrorEnvelope' }
@@ -2231,7 +2252,7 @@ components:
           type: object
           properties:
             pagination: { $ref: '#/components/schemas/MetaPagination' }
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+            rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
     ApiSuccessStocksSearchEnvelope:
       type: object
       properties:
@@ -2242,7 +2263,7 @@ components:
         meta:
           type: object
           properties:
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+                  rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
     ApiSuccessStockEnvelope:
       type: object
       properties:
@@ -2251,7 +2272,7 @@ components:
         meta:
           type: object
           properties:
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+                  rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
     ApiSuccessStockWithFundamentalsEnvelope:
       type: object
       properties:
@@ -2267,7 +2288,7 @@ components:
         meta:
           type: object
           properties:
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+            rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
 
     # Watchlist
     WatchlistItem:
@@ -2330,7 +2351,7 @@ components:
         meta:
           type: object
           properties:
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+            rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
     ApiSuccessWatchlistItemEnvelope:
       type: object
       properties:
@@ -2339,7 +2360,7 @@ components:
         meta:
           type: object
           properties:
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+            rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
     ApiSuccessWatchlistDeletedEnvelope:
       type: object
       properties:
@@ -2351,7 +2372,7 @@ components:
         meta:
           type: object
           properties:
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+            rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
     ApiSuccessWatchlistOrderEnvelope:
       type: object
       properties:
@@ -2360,11 +2381,11 @@ components:
           type: object
           properties:
             item: { $ref: '#/components/schemas/WatchlistItemWithStock' }
-            deletedAlerts: { type: integer }
+            deleted_alerts: { type: integer }
         meta:
           type: object
           properties:
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+            rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
 
     # API Keys
     ApiKeySummary:
@@ -2395,7 +2416,7 @@ components:
         meta:
           type: object
           properties:
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+            rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
     ApiSuccessApiKeyEnvelope:
       type: object
       properties:
@@ -2404,7 +2425,7 @@ components:
         meta:
           type: object
           properties:
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+            rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
 
     # Alerts
     AlertCondition:
@@ -2504,7 +2525,7 @@ components:
         meta:
           type: object
           properties:
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+            rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
     ApiSuccessAlertsListEnvelope:
       type: object
       properties:
@@ -2516,7 +2537,7 @@ components:
           type: object
           properties:
             pagination: { $ref: '#/components/schemas/MetaPagination' }
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+            rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
     ApiSuccessAlertDeletedEnvelope:
       type: object
       properties:
@@ -2524,12 +2545,12 @@ components:
         data:
           type: object
           properties:
-            alertId: { type: string, format: uuid }
+            alert_id: { type: string, format: uuid }
             status: { type: string, example: deleted }
         meta:
           type: object
           properties:
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+            rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
     ApiSuccessAlertHistoryEnvelope:
       type: object
       properties:
@@ -2541,7 +2562,7 @@ components:
           type: object
           properties:
             pagination: { $ref: '#/components/schemas/MetaPagination' }
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+            rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
     ApiSuccessAlertPausedEnvelope:
       type: object
       properties:
@@ -2549,12 +2570,12 @@ components:
         data:
           type: object
           properties:
-            alertId: { type: string, format: uuid }
+            alert_id: { type: string, format: uuid }
             status: { type: string, enum: [paused] }
         meta:
           type: object
           properties:
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+            rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
     ApiSuccessAlertActivatedEnvelope:
       type: object
       properties:
@@ -2562,13 +2583,13 @@ components:
         data:
           type: object
           properties:
-            alertId: { type: string, format: uuid }
+            alert_id: { type: string, format: uuid }
             status: { type: string, enum: [active] }
-            initialPrice: { type: number }
+            initial_price: { type: number }
         meta:
           type: object
           properties:
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+            rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
     ApiSuccessAlertVerifyEnvelope:
       type: object
       properties:
@@ -2576,12 +2597,12 @@ components:
         data:
           type: object
           properties:
-            alertId: { type: string, format: uuid }
+            alert_id: { type: string, format: uuid }
             symbol: { type: string }
         meta:
           type: object
           properties:
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+            rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
 
     # Webhooks
     Webhook:
@@ -2610,7 +2631,7 @@ components:
         meta:
           type: object
           properties:
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+            rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
     ApiSuccessWebhookCreatedEnvelope:
       type: object
       properties:
@@ -2619,7 +2640,7 @@ components:
         meta:
           type: object
           properties:
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+            rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
     ApiSuccessWebhooksListEnvelope:
       type: object
       properties:
@@ -2630,7 +2651,7 @@ components:
         meta:
           type: object
           properties:
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+            rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
     ApiSuccessWebhookDeletedEnvelope:
       type: object
       properties:
@@ -2642,7 +2663,7 @@ components:
         meta:
           type: object
           properties:
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+            rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
     ApiSuccessWebhookTestEnvelope:
       type: object
       properties:
@@ -2651,12 +2672,12 @@ components:
           type: object
           properties:
             status: { type: integer, example: 200 }
-            statusText: { type: string, example: OK }
+            status_text: { type: string, example: OK }
             response: { type: string }
         meta:
           type: object
           properties:
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+            rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
 
     # User domain
     UserSubscription:
@@ -2688,12 +2709,6 @@ components:
         watchlist_items_count: { type: integer }
         watchlist_quota: { type: integer }
 
-    NewsletterPreferences:
-      type: object
-      properties:
-        newsletter_product_updates: { type: boolean }
-        newsletter_weekly_summary: { type: boolean }
-
     ApiSuccessUserSubscriptionEnvelope:
       type: object
       properties:
@@ -2702,6 +2717,6 @@ components:
         meta:
           type: object
           properties:
-            rateLimit: { $ref: '#/components/schemas/MetaRateLimit' }
+            rate_limit: { $ref: '#/components/schemas/MetaRateLimit' }
 
     

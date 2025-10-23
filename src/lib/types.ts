@@ -37,7 +37,7 @@ export type AlertCondition = z.infer<typeof AlertConditionSchema>;
 /**
  * Alert Status
  */
-export const AlertStatusSchema = z.enum(['active', 'paused', 'triggered']);
+export const AlertStatusSchema = z.enum(['active', 'paused', 'triggered', 'inactive']);
 export type AlertStatus = z.infer<typeof AlertStatusSchema>;
 
 /**
@@ -151,13 +151,14 @@ export type ApiError = z.infer<typeof ApiErrorSchema>;
 export type ApiErrorEnvelope = z.infer<typeof ApiErrorEnvelopeSchema>;
 
 /**
- * Watchlist Item (API)
+ * Watchlist Item (API) - v1.1.0
  */
 export const WatchlistItemSchema = z.object({
   id: z.string().uuid(),
   stock_symbol: z.string(),
-  intention: z.enum(['buy', 'sell']).nullable().optional(),
+  intention: z.enum(['buy', 'sell']),
   target_price: z.number().nullable().optional(),
+  notes: z.string().nullable().optional(),
   initial_price: z.number().nullable().optional(),
   auto_alerts_enabled: z.boolean().optional(),
   stocks: z
@@ -168,19 +169,21 @@ export const WatchlistItemSchema = z.object({
     })
     .nullable()
     .optional(),
+  active_alert_count: z.number().nullable().optional(),
   created_at: z.string().optional(),
 });
 
 export type WatchlistItem = z.infer<typeof WatchlistItemSchema>;
 
 /**
- * Create Watchlist Item Request
+ * Create Watchlist Item Request - v1.1.0
  */
 export const CreateWatchlistItemRequestSchema = z.object({
   stock_symbol: z.string(),
-  intention: z.enum(['buy', 'sell']).optional(),
+  stock_name: z.string().optional(),
+  intention: z.enum(['buy', 'sell']),
   target_price: z.number().optional(),
-  auto_alerts_enabled: z.boolean().optional(),
+  notes: z.string().optional(),
 });
 
 export type CreateWatchlistItemRequest = z.infer<typeof CreateWatchlistItemRequestSchema>;
