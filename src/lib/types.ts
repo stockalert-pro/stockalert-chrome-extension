@@ -463,8 +463,10 @@ export const ALERT_TYPES: Record<AlertCondition, AlertTypeInfo> = {
     condition: 'reminder',
     category: 'time',
     label: 'One-Time Reminder',
-    description: 'Single reminder for this stock',
-    requiresThreshold: false,
+    description: 'Reminder in X days for this stock',
+    requiresThreshold: true,
+    thresholdLabel: 'Days Until',
+    thresholdUnit: 'days',
   },
   daily_reminder: {
     condition: 'daily_reminder',

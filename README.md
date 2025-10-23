@@ -122,7 +122,7 @@ _Coming soon: Chrome Web Store listing_
 |               | Earnings Announcement   | ✅                 | N days before earnings          |
 | **Dividend**  | Dividend Ex-Date        | ✅                 | N days before ex-date           |
 |               | Dividend Payment        | ❌                 | On payment date                 |
-| **Time**      | One-Time Reminder       | ❌                 | Single reminder                 |
+| **Time**      | One-Time Reminder       | ✅                 | Reminder in N days              |
 |               | Daily Reminder          | ❌                 | Daily reminder                  |
 
 ## Settings
