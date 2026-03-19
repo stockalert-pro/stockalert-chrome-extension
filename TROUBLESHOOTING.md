@@ -153,7 +153,7 @@ If these ARE highlighted, there's a bug in the detection.
 ### Permissions Issues
 
 The extension needs these permissions:
-- `storage` - Save watchlist and settings
+- `storage` - Save API key and settings
 - `activeTab` - Access current page content
 
 If permissions are missing:

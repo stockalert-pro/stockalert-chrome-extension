@@ -1,5 +1,17 @@
 import { storage } from '../lib/storage';
-import { ALERT_TYPES, AlertCondition, CreateAlertRequest } from '../lib/types';
+import {
+  ALERT_TYPES,
+  AlertCondition,
+  CreateAlertRequest,
+  type WatchlistItem,
+} from '../lib/types';
+import {
+  buildCreateAlertRequest,
+  coerceParameterValue,
+  getMissingRequiredParameters,
+  isAlertFormValid,
+  renderParameterField,
+} from './alert-form';
 
 /**
  * Popup Script
@@ -129,22 +141,14 @@ function handleConditionChange() {
   if (alertType.parameters && alertType.parameters.length > 0) {
     parametersGroup.style.display = 'block';
     parametersGroup.innerHTML = alertType.parameters
-      .map((param) => {
-        if (param.type === 'select') {
-          return `
-          <div class="input-group">
-            <label for="param-${param.name}">${param.label}</label>
-            <select id="param-${param.name}" data-param="${param.name}">
-              ${param.options
-                ?.map((opt) => `<option value="${opt.value}">${opt.label}</option>`)
-                .join('')}
-            </select>
-          </div>
-        `;
-        }
-        return '';
-      })
+      .map((param) => renderParameterField(param))
       .join('');
+
+    parametersGroup.querySelectorAll('[data-param]').forEach((element) => {
+      const eventName =
+        element instanceof HTMLInputElement && element.type === 'checkbox' ? 'change' : 'input';
+      element.addEventListener(eventName, validateAlertForm);
+    });
   } else {
     parametersGroup.style.display = 'none';
     parametersGroup.innerHTML = '';
@@ -160,40 +164,37 @@ function validateAlertForm() {
   const symbol = alertSymbolInput.value.trim();
   const condition = alertConditionSelect.value as AlertCondition;
   const threshold = alertThresholdInput.value;
+  const parameters = collectParameters(condition);
 
-  let isValid = symbol.length > 0 && condition.length > 0;
-
-  if (condition && ALERT_TYPES[condition].requiresThreshold) {
-    isValid = isValid && threshold.length > 0;
-  }
-
-  createAlertBtn.disabled = !isValid;
+  createAlertBtn.disabled = !isAlertFormValid({
+    symbol,
+    condition: condition || '',
+    threshold,
+    parameters,
+  });
 }
 
 /**
  * Handle create alert
  */
 async function handleCreateAlert() {
-  const symbol = alertSymbolInput.value.trim().toUpperCase();
+  const symbol = alertSymbolInput.value.trim();
   const condition = alertConditionSelect.value as AlertCondition;
-  const threshold = parseFloat(alertThresholdInput.value);
-  const notification = 'email' as const; // Default to email
+  const threshold = alertThresholdInput.value;
+  const parameters = collectParameters(condition);
+  const missingRequiredParameters = getMissingRequiredParameters(condition, parameters);
 
-  // Collect parameters
-  const parameters: Record<string, unknown> = {};
-  const paramInputs = parametersGroup.querySelectorAll('[data-param]');
-  paramInputs.forEach((input) => {
-    const paramName = (input as HTMLElement).dataset.param!;
-    parameters[paramName] = (input as HTMLInputElement | HTMLSelectElement).value;
-  });
+  if (missingRequiredParameters.length > 0) {
+    showStatus(`Please fill: ${missingRequiredParameters.join(', ')}`, 'error');
+    return;
+  }
 
-  const request: CreateAlertRequest = {
+  const request: CreateAlertRequest = buildCreateAlertRequest({
     symbol,
     condition,
-    notification,
-    threshold: ALERT_TYPES[condition].requiresThreshold ? threshold : undefined,
-    parameters: Object.keys(parameters).length > 0 ? parameters : undefined,
-  };
+    threshold,
+    parameters,
+  });
 
   console.log('[StockAlert] Creating alert:', request);
 
@@ -232,6 +233,42 @@ async function handleCreateAlert() {
   }
 }
 
+function collectParameters(condition: AlertCondition | ''): Record<string, unknown> {
+  if (!condition) {
+    return {};
+  }
+
+  const definitions = ALERT_TYPES[condition].parameters ?? [];
+  const parameterDefinitions = new Map(definitions.map((param) => [param.name, param]));
+  const parameters: Record<string, unknown> = {};
+  const paramInputs = parametersGroup.querySelectorAll('[data-param]');
+
+  paramInputs.forEach((input) => {
+    const element = input as HTMLInputElement | HTMLSelectElement;
+    const paramName = (input as HTMLElement).dataset.param;
+    if (!paramName) {
+      return;
+    }
+
+    const definition = parameterDefinitions.get(paramName);
+    if (!definition) {
+      return;
+    }
+
+    const rawValue =
+      element instanceof HTMLInputElement && element.type === 'checkbox'
+        ? element.checked
+        : element.value;
+    const coercedValue = coerceParameterValue(definition, rawValue);
+
+    if (coercedValue !== undefined) {
+      parameters[paramName] = coercedValue;
+    }
+  });
+
+  return parameters;
+}
+
 /**
  * Load watchlist from API
  */
@@ -244,7 +281,7 @@ async function loadWatchlist() {
       return;
     }
 
-    const watchlist = response.data || [];
+    const watchlist: WatchlistItem[] = response.data || [];
 
     if (watchlist.length === 0) {
       watchlistContainer.innerHTML = '<p class="empty-state">No symbols in watchlist</p>';
@@ -253,7 +290,7 @@ async function loadWatchlist() {
 
     watchlistContainer.innerHTML = watchlist
       .map(
-        (item: any) => `
+        (item) => `
       <div class="watchlist-item">
         <div>
           <span class="watchlist-symbol">${item.stock_symbol}</span>

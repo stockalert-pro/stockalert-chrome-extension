@@ -2,15 +2,15 @@
 
 ## Project Overview
 
-This is a Chrome Extension (Manifest V3) that detects stock symbols on any webpage and provides quick actions to create alerts via StockAlert.pro API or add symbols to a local watchlist.
+This is a Chrome Extension (Manifest V3) that detects stock symbols on any webpage and provides quick actions to create alerts via StockAlert.pro API or save symbols to the API-backed watchlist.
 
 **Key Features**:
 - Automatic stock symbol detection using regex
 - Visual highlighting with hover overlays
 - Direct API integration for alert creation
-- Local watchlist management
-- 21 supported alert types
-- Privacy-focused (local storage only)
+- API-backed watchlist access
+- 22 supported alert types
+- Local API key storage with API-backed alerting/watchlist actions
 
 ## Architecture
 
@@ -57,13 +57,13 @@ chrome-extension/
 
 3. **Popup** (`popup.ts`):
    - Configuration UI for API key
-   - Alert creation form with all 21 alert types
+   - Alert creation form with all 22 alert types
    - Watchlist management
    - Settings panel
 
 4. **Storage** (`storage.ts`):
    - Wraps `chrome.storage.local` with type safety
-   - Stores: API key, watchlist, settings
+   - Stores: API key and user settings
    - Validates data with Zod schemas
 
 ## Key Implementation Details
@@ -108,11 +108,6 @@ chrome-extension/
 ```typescript
 {
   apiKey?: string;
-  watchlist: Array<{
-    symbol: string;
-    addedAt: string;
-    notes?: string;
-  }>;
   settings: {
     autoDetect: boolean;
     highlightSymbols: boolean;
@@ -123,7 +118,7 @@ chrome-extension/
 
 ### Alert Types
 
-All 21 alert types defined in `ALERT_TYPES` constant:
+All 22 alert types defined in `ALERT_TYPES` constant:
 
 **Categories**:
 - Price (6 types)
@@ -151,12 +146,11 @@ npm run build
 ```
 
 **Build Output** (`dist/`):
-- `background.js` - Service worker
-- `content.js` - Content script
-- `content.css` - Content styles
-- `popup.js` - Popup script
-- `popup.html` - Popup HTML
-- `popup.css` - Popup styles
+- `assets/*.js` - Hashed Vite bundles for the background worker, popup, content script, and shared modules
+- `assets/*.css` - Hashed popup styles
+- `service-worker-loader.js` - Manifest entrypoint that loads the bundled background worker
+- `src/popup/popup.html` - Popup shell that references the bundled popup entry
+- `src/content/content.css` - Copied content stylesheet injected by the extension
 - `manifest.json` - Extension manifest
 - `icons/` - Extension icons
 
@@ -208,7 +202,7 @@ npm run build
     "initial_price": 189.2
   },
   "meta": {
-    "rateLimit": {
+    "rate_limit": {
       "limit": 100,
       "remaining": 99,
       "reset": 1736180400000
@@ -247,6 +241,7 @@ npm run build
 2. **Add to `AlertConditionSchema`** in `types.ts`
 3. **Add to `ALERT_TYPES`** constant with metadata
 4. **Update popup HTML** `<select>` options
+5. **Update popup form helpers/tests** for required parameter coercion
 
 ### Modifying Symbol Detection
 
@@ -276,7 +271,6 @@ npm run build
 
 **Methods**:
 - `getApiKey()` / `saveApiKey(key)`
-- `getWatchlist()` / `addToWatchlist(symbol)`
 - `getSettings()` / `updateSettings(updates)`
 
 **Validation**: All storage operations validated with Zod schemas
@@ -315,9 +309,8 @@ npm run build
 - [ ] Symbol detection on various websites (news, forums, blogs)
 - [ ] Highlighting appears and is clickable
 - [ ] Overlay shows on symbol click
-- [ ] Alert creation for all 21 types
+- [ ] Alert creation for all 22 types
 - [ ] Watchlist add/remove
-- [ ] Watchlist export
 - [ ] Settings toggle (auto-detect, highlighting)
 - [ ] API key save/validation
 - [ ] Error notifications
@@ -351,7 +344,7 @@ Good sites for testing symbol detection:
 
 - IntersectionObserver for viewport-only detection
 - Web Worker for symbol scanning
-- IndexedDB for larger watchlists
+- Local cache for larger watchlists
 - Symbol validation via API (check if ticker exists)
 
 ## Troubleshooting

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /**
- * Alert Condition Types - 21 supported alert types from StockAlert.pro API
+ * Alert Condition Types - 22 supported alert types from StockAlert.pro API
  */
 export const AlertConditionSchema = z.enum([
   // Price alerts
@@ -30,6 +30,8 @@ export const AlertConditionSchema = z.enum([
   // Dividend alerts
   'dividend_ex_date',
   'dividend_payment',
+  // Insider alerts
+  'insider_transactions',
 ]);
 
 export type AlertCondition = z.infer<typeof AlertConditionSchema>;
@@ -267,6 +269,7 @@ export interface AlertTypeInfo {
     type: 'string' | 'number' | 'boolean' | 'select';
     label: string;
     options?: Array<{ value: string; label: string }>;
+    placeholder?: string;
     required?: boolean;
   }>;
 }
@@ -370,6 +373,7 @@ export const ALERT_TYPES: Record<AlertCondition, AlertTypeInfo> = {
         name: 'volumeBaseline',
         type: 'select',
         label: 'Baseline',
+        placeholder: 'Use backend default',
         options: [
           { value: 'ma20', label: '20-day Average' },
           { value: 'ma50', label: '50-day Average' },
@@ -390,11 +394,12 @@ export const ALERT_TYPES: Record<AlertCondition, AlertTypeInfo> = {
         name: 'direction',
         type: 'select',
         label: 'Direction',
+        placeholder: 'Use backend default',
         options: [
-          { value: 'above', label: 'Above (Overbought)' },
-          { value: 'below', label: 'Below (Oversold)' },
+          { value: 'up', label: 'Up' },
+          { value: 'down', label: 'Down' },
+          { value: 'both', label: 'Both' },
         ],
-        required: true,
       },
     ],
   },
@@ -458,6 +463,14 @@ export const ALERT_TYPES: Record<AlertCondition, AlertTypeInfo> = {
     label: 'Dividend Payment',
     description: 'Alert on dividend payment date',
     requiresThreshold: false,
+    parameters: [
+      {
+        name: 'shares',
+        type: 'number',
+        label: 'Shares',
+        required: true,
+      },
+    ],
   },
   reminder: {
     condition: 'reminder',
@@ -474,5 +487,54 @@ export const ALERT_TYPES: Record<AlertCondition, AlertTypeInfo> = {
     label: 'Daily Reminder',
     description: 'Daily reminder for this stock',
     requiresThreshold: false,
+    parameters: [
+      {
+        name: 'deliveryTime',
+        type: 'select',
+        label: 'Delivery Time',
+        placeholder: 'Use backend default',
+        options: [
+          { value: 'market_open', label: 'Market Open' },
+          { value: 'after_market_close', label: 'After Market Close' },
+        ],
+      },
+    ],
+  },
+  insider_transactions: {
+    condition: 'insider_transactions',
+    category: 'fundamental',
+    label: 'Insider Transactions',
+    description: 'Alert on insider buys or sells above a minimum value',
+    requiresThreshold: true,
+    thresholdLabel: 'Minimum Transaction Value',
+    thresholdUnit: '$',
+    parameters: [
+      {
+        name: 'direction',
+        type: 'select',
+        label: 'Direction',
+        placeholder: 'Use backend default',
+        options: [
+          { value: 'buy', label: 'Buy' },
+          { value: 'sell', label: 'Sell' },
+          { value: 'both', label: 'Both' },
+        ],
+      },
+      {
+        name: 'minExecutives',
+        type: 'number',
+        label: 'Min Executives',
+      },
+      {
+        name: 'windowDays',
+        type: 'number',
+        label: 'Window Days',
+      },
+      {
+        name: 'openMarketOnly',
+        type: 'boolean',
+        label: 'Open Market Only',
+      },
+    ],
   },
 };
