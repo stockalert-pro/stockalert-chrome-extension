@@ -112,4 +112,38 @@ describe('alert-form helpers', () => {
       parameters: { deliveryTime: 'after_market_close' },
     });
   });
+
+  it('requires a social buzz direction and omits threshold', () => {
+    expect(
+      isAlertFormValid({
+        symbol: 'TSLA',
+        condition: 'social_buzz',
+        threshold: '',
+        parameters: {},
+      })
+    ).toBe(false);
+
+    expect(
+      isAlertFormValid({
+        symbol: 'TSLA',
+        condition: 'social_buzz',
+        threshold: '',
+        parameters: { direction: 'rising' },
+      })
+    ).toBe(true);
+
+    expect(
+      buildCreateAlertRequest({
+        symbol: 'tsla',
+        condition: 'social_buzz',
+        threshold: '10',
+        parameters: { direction: 'falling' },
+      })
+    ).toEqual({
+      symbol: 'TSLA',
+      condition: 'social_buzz',
+      notification: 'email',
+      parameters: { direction: 'falling' },
+    });
+  });
 });

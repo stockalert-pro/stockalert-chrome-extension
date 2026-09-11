@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /**
- * Alert Condition Types - 22 supported alert types from StockAlert.pro API
+ * Alert Condition Types - 23 supported alert types from StockAlert.pro API
  */
 export const AlertConditionSchema = z.enum([
   // Price alerts
@@ -32,6 +32,8 @@ export const AlertConditionSchema = z.enum([
   'dividend_payment',
   // Insider alerts
   'insider_transactions',
+  // Social alerts
+  'social_buzz',
 ]);
 
 export type AlertCondition = z.infer<typeof AlertConditionSchema>;
@@ -258,7 +260,7 @@ export interface AddToWatchlistMessage extends ChromeMessage<{ symbol: string; n
  */
 export interface AlertTypeInfo {
   condition: AlertCondition;
-  category: 'price' | 'technical' | 'fundamental' | 'dividend' | 'time';
+  category: 'price' | 'technical' | 'fundamental' | 'dividend' | 'time' | 'social';
   label: string;
   description: string;
   requiresThreshold: boolean;
@@ -534,6 +536,25 @@ export const ALERT_TYPES: Record<AlertCondition, AlertTypeInfo> = {
         name: 'openMarketOnly',
         type: 'boolean',
         label: 'Open Market Only',
+      },
+    ],
+  },
+  social_buzz: {
+    condition: 'social_buzz',
+    category: 'social',
+    label: 'Social Buzz',
+    description: 'Alert when social volume is rising or falling',
+    requiresThreshold: false,
+    parameters: [
+      {
+        name: 'direction',
+        type: 'select',
+        label: 'Direction',
+        required: true,
+        options: [
+          { value: 'rising', label: 'Rising' },
+          { value: 'falling', label: 'Falling' },
+        ],
       },
     ],
   },
