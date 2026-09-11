@@ -187,7 +187,7 @@ npm run clean
 
 The extension uses the [StockAlert.pro API v1](https://stockalert.pro/api/docs):
 
-- Base URL: `https://stockalert.pro/api/v1`
+- Base URL: `https://api.stockalert.pro/v1`
 - Authentication: API Key via `X-API-Key` header
 - Response format: Envelope with `{ success, data, meta }`
 - Rate limiting: 100 requests/hour (Basic), 10,000/hour (Premium)

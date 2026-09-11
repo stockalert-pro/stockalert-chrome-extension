@@ -47,7 +47,7 @@ export class StockAlertApiClient {
 
   constructor(config: ApiClientConfig) {
     this.apiKey = config.apiKey;
-    this.baseUrl = config.baseUrl || 'https://stockalert.pro';
+    this.baseUrl = config.baseUrl || 'https://api.stockalert.pro';
   }
 
   /**
@@ -89,7 +89,7 @@ export class StockAlertApiClient {
    * Create a new alert
    */
   async createAlert(request: CreateAlertRequest): Promise<Alert> {
-    const response = await this.request<unknown>('/api/v1/alerts', {
+    const response = await this.request<unknown>('/v1/alerts', {
       method: 'POST',
       body: JSON.stringify(request),
     });
@@ -116,7 +116,7 @@ export class StockAlertApiClient {
     if (params?.search) searchParams.set('search', params.search);
 
     const query = searchParams.toString();
-    const endpoint = `/api/v1/alerts${query ? `?${query}` : ''}`;
+    const endpoint = `/v1/alerts${query ? `?${query}` : ''}`;
 
     const response = await this.request<unknown>(endpoint, {
       method: 'GET',
@@ -134,7 +134,7 @@ export class StockAlertApiClient {
    * Get a single alert by ID
    */
   async getAlert(id: string): Promise<Alert> {
-    const response = await this.request<unknown>(`/api/v1/alerts/${id}`, {
+    const response = await this.request<unknown>(`/v1/alerts/${id}`, {
       method: 'GET',
     });
 
@@ -146,7 +146,7 @@ export class StockAlertApiClient {
    * Delete an alert
    */
   async deleteAlert(id: string): Promise<void> {
-    await this.request(`/api/v1/alerts/${id}`, {
+    await this.request(`/v1/alerts/${id}`, {
       method: 'DELETE',
     });
   }
@@ -155,7 +155,7 @@ export class StockAlertApiClient {
    * Pause an alert
    */
   async pauseAlert(id: string): Promise<void> {
-    await this.request(`/api/v1/alerts/${id}/pause`, {
+    await this.request(`/v1/alerts/${id}/pause`, {
       method: 'POST',
     });
   }
@@ -164,7 +164,7 @@ export class StockAlertApiClient {
    * Activate an alert
    */
   async activateAlert(id: string): Promise<void> {
-    await this.request(`/api/v1/alerts/${id}/activate`, {
+    await this.request(`/v1/alerts/${id}/activate`, {
       method: 'POST',
     });
   }
@@ -180,7 +180,7 @@ export class StockAlertApiClient {
    * List watchlist items
    */
   async listWatchlist(): Promise<WatchlistItem[]> {
-    const response = await this.request<unknown>('/api/v1/watchlist', {
+    const response = await this.request<unknown>('/v1/watchlist', {
       method: 'GET',
     });
 
@@ -192,7 +192,7 @@ export class StockAlertApiClient {
    * Add item to watchlist
    */
   async addToWatchlist(request: CreateWatchlistItemRequest): Promise<WatchlistItem> {
-    const response = await this.request<unknown>('/api/v1/watchlist', {
+    const response = await this.request<unknown>('/v1/watchlist', {
       method: 'POST',
       body: JSON.stringify(request),
     });
@@ -205,7 +205,7 @@ export class StockAlertApiClient {
    * Remove item from watchlist
    */
   async removeFromWatchlist(id: string): Promise<void> {
-    await this.request(`/api/v1/watchlist/${id}`, {
+    await this.request(`/v1/watchlist/${id}`, {
       method: 'DELETE',
     });
   }

@@ -9,7 +9,7 @@ This is a Chrome Extension (Manifest V3) that detects stock symbols on any webpa
 - Visual highlighting with hover overlays
 - Direct API integration for alert creation
 - API-backed watchlist access
-- 22 supported alert types
+- 23 supported alert types
 - Local API key storage with API-backed alerting/watchlist actions
 
 ## Architecture
@@ -57,7 +57,7 @@ chrome-extension/
 
 3. **Popup** (`popup.ts`):
    - Configuration UI for API key
-   - Alert creation form with all 22 alert types
+   - Alert creation form with all 23 alert types
    - Watchlist management
    - Settings panel
 
@@ -88,7 +88,7 @@ chrome-extension/
 
 ### API Client (`api-client.ts`)
 
-**Base URL**: `https://stockalert.pro/api/v1`
+**Base URL**: `https://api.stockalert.pro/v1`
 
 **Authentication**: `X-API-Key` header
 
@@ -118,7 +118,7 @@ chrome-extension/
 
 ### Alert Types
 
-All 22 alert types defined in `ALERT_TYPES` constant:
+All 23 alert types defined in `ALERT_TYPES` constant:
 
 **Categories**:
 - Price (6 types)
@@ -126,6 +126,7 @@ All 22 alert types defined in `ALERT_TYPES` constant:
 - Fundamental (5 types)
 - Dividend (2 types)
 - Time (2 types)
+- Social (1 type)
 
 **Metadata per type**:
 - `requiresThreshold`: boolean
@@ -177,7 +178,7 @@ npm run build
 
 ### Creating Alerts
 
-**Request** (`POST /api/v1/alerts`):
+**Request** (`POST /v1/alerts`):
 ```json
 {
   "symbol": "AAPL",
@@ -295,7 +296,8 @@ npm run build
 **Minimal permissions**:
 - `storage` - Local data persistence
 - `activeTab` - Access current tab when clicked
-- `https://stockalert.pro/*` - API calls only
+- `https://api.stockalert.pro/*` - API calls
+- `https://stockalert.pro/*` - docs and dashboard links
 
 **NOT requested**:
 - `<all_urls>` - Only inject when needed

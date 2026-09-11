@@ -1,6 +1,6 @@
 {
   "name": "stockalert-chrome-extension",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Detect stock symbols on any webpage and create alerts or add to watchlist with StockAlert.pro",
   "type": "module",
   "scripts": {
