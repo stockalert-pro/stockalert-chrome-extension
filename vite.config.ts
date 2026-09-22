@@ -1,24 +1,30 @@
-import { defineConfig } from 'vite';
-import { resolve } from 'path';
-import { crx } from '@crxjs/vite-plugin';
-import manifest from './public/manifest.json';
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { defineConfig } from "vitest/config";
+
+const rootDir = fileURLToPath(new URL(".", import.meta.url));
 
 export default defineConfig({
-  plugins: [
-    crx({ manifest }),
-  ],
+  base: "./",
   build: {
-    outDir: 'dist',
-    sourcemap: process.env.NODE_ENV === 'development',
+    emptyOutDir: true,
     rollupOptions: {
       input: {
-        popup: resolve(__dirname, 'src/popup/popup.html'),
+        background: resolve(rootDir, "src/background.ts"),
+        content: resolve(rootDir, "src/content.ts"),
+        options: resolve(rootDir, "options.html"),
+        popup: resolve(rootDir, "popup.html"),
+      },
+      output: {
+        assetFileNames: "assets/[name]-[hash][extname]",
+        chunkFileNames: "chunks/[name]-[hash].js",
+        entryFileNames: "[name].js",
+        experimentalMinChunkSize: 1_000_000,
       },
     },
   },
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src'),
-    },
+  test: {
+    environment: "node",
+    include: ["src/**/*.test.ts", "tests/**/*.test.ts"],
   },
 });

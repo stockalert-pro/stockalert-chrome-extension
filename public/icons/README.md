@@ -1,13 +1,11 @@
 # Icons
 
-This directory contains placeholder icons for the Chrome Extension.
+Dashboard app icon (black square, white bell, blue spark) from `apps/dashboard/public/icon.svg`.
 
-To replace with production icons:
-1. Create PNG icons in sizes: 16x16, 48x48, 128x128
-2. Name them: icon-16.png, icon-48.png, icon-128.png
-3. Replace the files in this directory
+Chrome Web Store wants a square PNG without extra padding. Do not round the corners here; Chrome applies its own mask.
 
-For now, you can use the SVG as reference and convert to PNG using:
-- https://www.photopea.com
-- Figma
-- Any SVG to PNG converter tool
+- `icon.svg` source
+- `icon-16.png`
+- `icon-32.png`
+- `icon-48.png`
+- `icon-128.png`

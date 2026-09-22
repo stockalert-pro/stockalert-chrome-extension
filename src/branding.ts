@@ -1,0 +1,9 @@
+export const PRODUCT_NAME = "StockAlert.pro";
+export const API_BASE_URL = "https://api.stockalert.pro";
+export const SITE_URL = "https://stockalert.pro";
+export const DASHBOARD_API_KEYS_URL = "https://app.stockalert.pro/settings#api-keys";
+export const API_DOCS_URL = "https://stockalert.pro/api/docs";
+export const PRIVACY_URL = "https://stockalert.pro/privacy";
+export const SUPPORT_EMAIL = "support@stockalert.pro";
+export const BRAND_LOGO_DARK = "brand/stockalert-logo-dark.png";
+export const DASHBOARD_UPGRADE_URL = "https://app.stockalert.pro/settings";
