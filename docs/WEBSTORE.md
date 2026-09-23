@@ -92,7 +92,7 @@ StockAlert.pro helps you create alerts. It is not financial advice.
 
 - Developer website: https://stockalert.pro
 - Privacy policy: https://stockalert.pro/privacy
-- Support URL: https://stockalert.pro/contact (or mailto:support@stockalert.pro)
+- Support URL: https://stockalert.pro/imprint (contact page returns 404; imprint has legal/support contact)
 - Support email: support@stockalert.pro
 
 ## Publisher
