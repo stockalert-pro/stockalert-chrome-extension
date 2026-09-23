@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Store asset preview</title>
+    <style>
+      body {
+        background: #111;
+        color: #eee;
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        padding: 24px;
+      }
+      h1 { font-size: 18px; margin: 0 0 8px; }
+      p { color: #aaa; margin: 0 0 24px; }
+      .grid { display: grid; gap: 24px; }
+      .cell { display: grid; gap: 8px; }
+      iframe {
+        border: 1px solid oklch(1 0 0 / 0.12);
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>StockAlert.pro store assets</h1>
+    <p>Each frame matches Chrome Web Store export size. Reload after <code>npm run assets:store</code>.</p>
+    <div class="grid">
+      <div class="cell">
+        <strong>Marquee 1400×560</strong>
+        <iframe src="promo-marquee.html" width="1400" height="560" title="Marquee"></iframe>
+      </div>
+      <div class="cell">
+        <strong>Small promo 440×280</strong>
+        <iframe src="promo-small.html" width="440" height="280" title="Small promo"></iframe>
+      </div>
+      <div class="cell">
+        <strong>Screenshots 1280×800</strong>
+        <iframe src="screenshots.html?shot=1" width="1280" height="800" title="Shot 1"></iframe>
+        <iframe src="screenshots.html?shot=2" width="1280" height="800" title="Shot 2"></iframe>
+        <iframe src="screenshots.html?shot=3" width="1280" height="800" title="Shot 3"></iframe>
+        <iframe src="screenshots.html?shot=4" width="1280" height="800" title="Shot 4"></iframe>
+        <iframe src="screenshots.html?shot=5" width="1280" height="800" title="Shot 5"></iframe>
+      </div>
+    </div>
+  </body>
+</html>

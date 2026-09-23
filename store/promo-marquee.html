@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>StockAlert.pro marquee</title>
+    <link rel="stylesheet" href="brand.css" />
+    <style>
+      html, body {
+        height: 560px;
+        margin: 0;
+        overflow: hidden;
+        width: 1400px;
+      }
+      .orb-blue { height: 480px; left: -120px; top: -200px; width: 480px; }
+      .orb-purple { height: 400px; right: 80px; top: -120px; width: 400px; }
+      .stage {
+        align-items: center;
+        box-sizing: border-box;
+        display: grid;
+        gap: 44px;
+        grid-template-columns: 400px 1fr;
+        height: 100%;
+        padding: 40px 52px;
+      }
+      .pitch .logo { height: 32px; margin-bottom: 28px; }
+      h1 {
+        font-size: 50px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        line-height: 1.04;
+        margin: 0;
+        text-wrap: balance;
+      }
+      .scene {
+        height: 100%;
+        max-height: 480px;
+        position: relative;
+      }
+      .scene .browser { height: 100%; }
+      .scene .article { padding-bottom: 48px; padding-right: 300px; }
+      .scene .overlay {
+        bottom: 36px;
+        padding: 16px;
+        position: absolute;
+        right: 36px;
+        width: 268px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="glow" aria-hidden="true">
+      <div class="orb orb-blue"></div>
+      <div class="orb orb-purple"></div>
+    </div>
+    <div class="canvas stage">
+      <div class="pitch">
+        <img class="logo" src="brand/stockalert-logo-dark.png" alt="StockAlert.pro" />
+        <h1>Price alerts from any page you read.</h1>
+      </div>
+      <div class="scene">
+        <div class="browser browser-fill">
+          <div class="browser-bar">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            <div class="omnibox">https://finance.yahoo.com/quote/NVDA</div>
+          </div>
+          <div class="article">
+            <p class="kicker">Market notes</p>
+            <h2>Why <span class="ticker hot">NVDA</span> keeps showing up</h2>
+            <p class="byline">September 2026</p>
+            <p>Analysts line up <span class="ticker">NVDA</span>, <span class="ticker">AMD</span>, and <span class="ticker">AVGO</span> after the latest print.</p>
+            <p><span class="ticker">MSFT</span> and <span class="ticker">AMZN</span> stay the largest cloud buyers.</p>
+          </div>
+        </div>
+        <div class="overlay stack">
+          <div class="row">
+            <img class="mark" src="brand/app-icon.png" alt="" />
+            <div>
+              <strong>NVDA</strong>
+              <div class="sub">StockAlert.pro</div>
+            </div>
+          </div>
+          <div class="btn">Create Alert</div>
+          <div class="btn secondary">Add to Watchlist</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

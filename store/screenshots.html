@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>StockAlert.pro Store Screenshots</title>
+    <link rel="stylesheet" href="brand.css" />
+    <style>
+      html, body {
+        height: 800px;
+        overflow: hidden;
+        width: 1280px;
+      }
+      .shot {
+        display: none;
+        height: 800px;
+        overflow: hidden;
+        position: relative;
+        width: 1280px;
+      }
+      .shot.active { display: block; }
+      .orb-blue { height: 560px; left: -160px; top: -200px; width: 560px; }
+      .orb-purple { height: 460px; right: -100px; top: -100px; width: 460px; }
+      .frame {
+        box-sizing: border-box;
+        display: grid;
+        gap: 20px;
+        grid-template-rows: auto 1fr;
+        height: 100%;
+        padding: 32px 40px 36px;
+        position: relative;
+      }
+      .frame.layout-split {
+        align-items: center;
+        gap: 48px;
+        grid-template-columns: 1fr 400px;
+        grid-template-rows: 1fr;
+      }
+      .pitch .logo { height: 32px; margin-bottom: 20px; }
+      .pitch .title {
+        font-size: 40px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        line-height: 1.04;
+        margin: 0 0 14px;
+        text-wrap: balance;
+      }
+      .pitch .lede {
+        color: var(--secondary);
+        font-size: 19px;
+        line-height: 1.45;
+        margin: 0;
+        max-width: 420px;
+        text-wrap: pretty;
+      }
+      .title {
+        font-size: 34px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        line-height: 1.05;
+        margin: 0;
+        text-wrap: balance;
+      }
+      .title-row {
+        align-items: center;
+        display: flex;
+        gap: 16px;
+      }
+      .title-row .logo { height: 30px; }
+      .hero {
+        align-items: center;
+        display: flex;
+        justify-content: center;
+        min-height: 0;
+      }
+      .layout-split .hero {
+        align-items: stretch;
+        justify-content: stretch;
+      }
+      .layout-split .hero .popup {
+        height: fit-content;
+        max-height: 100%;
+        width: 100%;
+      }
+      .hero.browser-shot .browser-wrap {
+        height: 100%;
+        margin: 0 auto;
+        max-width: 980px;
+        position: relative;
+        width: 100%;
+      }
+      .hero.browser-shot .browser {
+        height: 100%;
+        min-height: 520px;
+      }
+      .hero.browser-shot .overlay {
+        bottom: 40px;
+        position: absolute;
+        right: 40px;
+        width: 276px;
+      }
+      .hero.menu-shot .browser-wrap {
+        margin: 0 auto;
+        max-width: 920px;
+        position: relative;
+        width: 100%;
+      }
+      .hero.menu-shot .browser { min-height: 540px; }
+      .hero.menu-shot .menu {
+        position: absolute;
+        right: 64px;
+        top: 280px;
+        z-index: 2;
+      }
+      .hero.setup {
+        align-items: center;
+      }
+      .hero.setup .popup {
+        max-height: 100%;
+        width: 420px;
+      }
+      .hero.privacy {
+        align-items: stretch;
+        display: grid;
+        gap: 24px;
+        grid-template-columns: 1fr 1fr;
+        overflow: hidden;
+      }
+      .perm-panel {
+        align-content: start;
+        background: var(--elevated);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lift);
+        display: grid;
+        gap: 18px;
+        min-height: 0;
+        padding: 24px;
+      }
+      .perm-panel h2 {
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        margin: 0;
+      }
+      .perm-list {
+        display: grid;
+        gap: 12px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .perm-list li {
+        align-items: center;
+        background: #101114;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        display: flex;
+        font-size: 15px;
+        font-weight: 600;
+        gap: 12px;
+        padding: 12px 14px;
+      }
+      .perm-list li span.ok {
+        background: rgba(85, 201, 111, 0.15);
+        border-radius: 8px;
+        color: var(--success);
+        flex-shrink: 0;
+        font-size: 12px;
+        font-weight: 800;
+        padding: 4px 8px;
+      }
+      .perm-list li span.no {
+        background: rgba(248, 113, 113, 0.12);
+        border-radius: 8px;
+        color: #f87171;
+        flex-shrink: 0;
+        font-size: 12px;
+        font-weight: 800;
+        padding: 4px 8px;
+      }
+      .types-panel {
+        align-content: start;
+        display: grid;
+        gap: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="shot" data-shot="1">
+      <div class="glow" aria-hidden="true"><div class="orb orb-blue"></div><div class="orb orb-purple"></div></div>
+      <div class="canvas frame layout-split">
+        <div class="pitch">
+          <img class="logo" src="brand/stockalert-logo-dark.png" alt="" />
+          <h1 class="title">Create an alert in seconds.</h1>
+          <p class="lede">Set price or time alerts and keep a watchlist without leaving the page.</p>
+        </div>
+        <div class="hero">
+          <div class="popup stack">
+            <img class="logo" src="brand/stockalert-logo-dark.png" alt="" />
+            <div class="section stack">
+              <p class="label">Stock symbol</p>
+              <div class="field">NVDA</div>
+              <p class="label">Alert type</p>
+              <div class="field select">Price Above</div>
+              <p class="label">Target price ($)</p>
+              <div class="field price">140.00</div>
+              <div class="btn">Create Alert</div>
+            </div>
+            <div class="section stack">
+              <p class="label">Watchlist</p>
+              <div class="watch-item"><strong>AAPL</strong><span>$229.15</span></div>
+              <div class="watch-item"><strong>MSFT</strong><span>$428.40</span></div>
+              <div class="watch-item"><strong>NVDA</strong><span>$138.90</span></div>
+            </div>
+            <p class="pill">Basic: Price and Time alerts</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot" data-shot="2">
+      <div class="glow" aria-hidden="true"><div class="orb orb-blue"></div><div class="orb orb-purple"></div></div>
+      <div class="canvas frame">
+        <div class="title-row">
+          <img class="logo" src="brand/stockalert-logo-dark.png" alt="" />
+          <h1 class="title">Click a ticker on the page.</h1>
+        </div>
+        <div class="hero browser-shot">
+          <div class="browser-wrap">
+            <div class="browser browser-fill">
+              <div class="browser-bar">
+                <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                <div class="omnibox">https://finance.yahoo.com/quote/NVDA</div>
+              </div>
+              <div class="article" style="padding-right: 300px;">
+                <p class="kicker">Semiconductors</p>
+                <h2>Why <span class="ticker hot">NVDA</span> leads every cloud note</h2>
+                <p class="byline">September 2026</p>
+                <p>Filings put <span class="ticker">NVDA</span> next to <span class="ticker">AMD</span> and <span class="ticker">AVGO</span> when AI spend comes up.</p>
+                <p>Buyers still cluster in <span class="ticker">MSFT</span>, <span class="ticker">AMZN</span>, and <span class="ticker">GOOGL</span>.</p>
+              </div>
+            </div>
+            <div class="overlay stack">
+              <div class="row">
+                <img class="mark" src="brand/app-icon.png" alt="" />
+                <div>
+                  <strong>NVDA</strong>
+                  <div class="sub">StockAlert.pro</div>
+                </div>
+              </div>
+              <div class="btn">Create Alert</div>
+              <div class="btn secondary">Add to Watchlist</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot" data-shot="3">
+      <div class="glow" aria-hidden="true"><div class="orb orb-blue"></div><div class="orb orb-purple"></div></div>
+      <div class="canvas frame">
+        <div class="title-row">
+          <img class="logo" src="brand/stockalert-logo-dark.png" alt="" />
+          <h1 class="title">Highlight a ticker. Right-click.</h1>
+        </div>
+        <div class="hero menu-shot">
+          <div class="browser-wrap">
+            <div class="browser">
+              <div class="browser-bar">
+                <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                <div class="omnibox">https://www.sec.gov/Archives/edgar/data/tsla</div>
+              </div>
+              <div class="article">
+                <p class="kicker">SEC filing</p>
+                <h2>Outlook names <span class="ticker sel">TSLA</span> three times</h2>
+                <p class="byline">Form 10-K · MD&amp;A</p>
+                <p>Management referenced <span class="ticker sel">TSLA</span> for delivery cadence and the next platform.</p>
+                <p>Peers in the same section: <span class="ticker">GM</span>, <span class="ticker">RIVN</span>, <span class="ticker">LCID</span>.</p>
+              </div>
+            </div>
+            <div class="menu">
+              <div>Copy</div>
+              <div>Search Google for "TSLA"</div>
+              <div class="active">Create StockAlert.pro alert for "TSLA"</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot" data-shot="4">
+      <div class="glow" aria-hidden="true"><div class="orb orb-blue"></div><div class="orb orb-purple"></div></div>
+      <div class="canvas frame">
+        <div class="title-row">
+          <img class="logo" src="brand/stockalert-logo-dark.png" alt="" />
+          <h1 class="title">Paste your API key once.</h1>
+        </div>
+        <div class="hero setup">
+          <div class="popup stack">
+            <img class="logo" src="brand/stockalert-logo-dark.png" alt="" />
+            <div class="section stack">
+              <p class="label">Quick setup</p>
+              <h2 style="font-size:18px;font-weight:700;margin:0;">StockAlert.pro API key</h2>
+              <div class="field">sk_live_••••••••••••••••</div>
+              <div class="btn">Save</div>
+            </div>
+            <div class="section stack">
+              <p class="label">Ticker detection</p>
+              <p style="color:var(--secondary);font-size:15px;margin:0;">On for finance.yahoo.com</p>
+              <div class="btn secondary">Turn off for this site</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot" data-shot="5">
+      <div class="glow" aria-hidden="true"><div class="orb orb-blue"></div><div class="orb orb-purple"></div></div>
+      <div class="canvas frame">
+        <div class="title-row">
+          <img class="logo" src="brand/stockalert-logo-dark.png" alt="" />
+          <h1 class="title">Private by default.</h1>
+        </div>
+        <div class="hero privacy">
+          <div class="perm-panel">
+            <h2>What we ask for</h2>
+            <ul class="perm-list">
+              <li><span class="ok">YES</span> api.stockalert.pro</li>
+              <li><span class="ok">OPT</span> Site you enable for detection</li>
+              <li><span class="no">NO</span> Browsing history</li>
+              <li><span class="no">NO</span> Ads or analytics</li>
+            </ul>
+          </div>
+          <div class="perm-panel types-panel">
+            <h2>Scan stays on your device</h2>
+            <p style="color:var(--secondary);font-size:17px;line-height:1.45;margin:0;">Page text is not uploaded. Only the ticker you pick and your alert settings go to the API.</p>
+            <div class="badge-row">
+              <span>Price Above</span>
+              <span>Reminder</span>
+              <span>Daily Change</span>
+              <span class="lock">Death Cross</span>
+              <span class="lock">RSI</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script>
+      const shot = new URLSearchParams(location.search).get("shot") || location.hash.replace("#shot-", "") || "1";
+      document.querySelectorAll(".shot").forEach((node) => {
+        node.classList.toggle("active", node.getAttribute("data-shot") === shot);
+      });
+    </script>
+  </body>
+</html>

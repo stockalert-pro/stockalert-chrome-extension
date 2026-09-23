@@ -1,17 +1,18 @@
 {
   "name": "stockalert-chrome-extension",
-  "version": "1.1.0",
-  "description": "Detect stock symbols on any webpage and create alerts or add to watchlist with StockAlert.pro",
+  "version": "1.2.0",
+  "description": "Detect stock symbols while browsing and create StockAlert.pro alerts from Chrome.",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite build --watch --mode development",
-    "build": "tsc --noEmit && vite build && npm run copy-css",
-    "copy-css": "mkdir -p dist/src/content && cp src/content/content.css dist/src/content/",
+    "build": "tsc --noEmit && vite build && node scripts/check-dist.mjs",
+    "dist:zip": "rm -f stockalert-chrome-extension.zip && npm run build && find dist -name .DS_Store -delete && cd dist && zip -r ../stockalert-chrome-extension.zip . -x '*.DS_Store' '__MACOSX/*' 'icons/README.md'",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint \"src/**/*.{ts,tsx}\"",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
-    "clean": "rm -rf dist"
+    "verify": "npm run typecheck && npm run test && npm run build",
+    "assets:store": "node scripts/capture-store-assets.mjs",
+    "clean": "rm -rf dist stockalert-chrome-extension.zip"
   },
   "keywords": [
     "chrome-extension",
@@ -20,27 +21,16 @@
     "stocks",
     "investing"
   ],
-  "author": "StockAlert.pro",
+  "author": "Adanos Software GmbH",
   "license": "Proprietary",
   "devDependencies": {
-    "@crxjs/vite-plugin": "^2.0.0-beta.23",
-    "@types/chrome": "^0.0.258",
-    "@types/node": "^20.11.5",
-    "@typescript-eslint/eslint-plugin": "^6.19.0",
-    "@typescript-eslint/parser": "^6.19.0",
-    "autoprefixer": "^10.4.27",
-    "baseline-browser-mapping": "^2.10.9",
-    "browserslist": "^4.28.1",
-    "eslint": "^8.56.0",
-    "postcss": "^8.5.8",
-    "prettier": "^3.2.4",
-    "tailwindcss": "^3.4.1",
-    "typescript": "^5.3.3",
-    "vite": "^5.0.11",
-    "vite-plugin-static-copy": "^1.0.0",
-    "vitest": "^2.1.8"
+    "@types/chrome": "^0.0.308",
+    "@types/node": "^24.5.2",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.7",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
-    "zod": "^3.22.4"
+    "zod": "^3.25.76"
   }
 }
